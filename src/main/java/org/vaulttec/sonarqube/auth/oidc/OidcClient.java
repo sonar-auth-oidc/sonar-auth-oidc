@@ -18,10 +18,12 @@
 package org.vaulttec.sonarqube.auth.oidc;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.io.UnsupportedEncodingException;
+import java.net.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -67,6 +69,7 @@ import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import com.nimbusds.openid.connect.sdk.validators.IDTokenValidator;
 
 import org.sonar.api.server.ServerSide;
+import org.sonar.api.server.http.HttpRequest;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
@@ -97,20 +100,36 @@ public class OidcClient {
     return request;
   }
 
-  public AuthorizationCode getAuthorizationCode(HttpServletRequest callbackRequest) {
+  public AuthorizationCode getAuthorizationCode(HttpRequest callbackRequest) {
     LOGGER.debug("Retrieving authorization code from callback request's query parameters: {}",
         callbackRequest.getQueryString());
     AuthenticationResponse authResponse;
     try {
-      HTTPRequest request = ServletUtils.createHTTPRequest(callbackRequest);
-      authResponse = AuthenticationResponseParser.parse(request.getURL().toURI(), request.getQueryParameters());
-    } catch (ParseException | URISyntaxException | IOException e) {
-      throw new IllegalStateException("Error while parsing callback request", e);
+      URI uri = new URI(callbackRequest.getRequestURL());
+
+      Map<String, List<String>> queryParams = new HashMap<>();
+      String queryString = callbackRequest.getQueryString();
+      if (queryString != null && !queryString.isEmpty() ) {
+        String[] pairs = queryString.split("&");
+        for (String pair: pairs) {
+          int idx = pair.indexOf("=");
+          if (idx > 0) {
+            String key = URLDecoder.decode(pair.substring(0,idx), "UTF-8");
+            String value = URLDecoder.decode(pair.substring(idx + 1), "UTF-8");
+            queryParams.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
+          }
+        }
+      }
+     authResponse = AuthenticationResponseParser.parse(uri, queryParams);
+    } catch (ParseException | URISyntaxException | UnsupportedEncodingException e) {
+      throw new IllegalStateException("Error while processing callback request", e);
     }
+
     if (authResponse instanceof AuthenticationErrorResponse) {
       ErrorObject error = ((AuthenticationErrorResponse) authResponse).getErrorObject();
       throw new IllegalStateException("Authentication request failed: " + error.toJSONObject());
     }
+
     AuthorizationCode authorizationCode = ((AuthenticationSuccessResponse) authResponse).getAuthorizationCode();
     LOGGER.debug("Authorization code: {}", authorizationCode.getValue());
     return authorizationCode;

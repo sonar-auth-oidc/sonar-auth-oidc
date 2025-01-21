@@ -20,16 +20,20 @@ package org.vaulttec.sonarqube.auth.oidc;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Optional;
 
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 
+import org.junit.Before;
 import org.junit.Test;
+import org.sonar.api.config.Configuration;
 import org.sonar.api.server.authentication.Display;
 import org.sonar.api.server.authentication.OAuth2IdentityProvider;
 
@@ -38,7 +42,23 @@ public class OidcIdentityProviderTest extends AbstractOidcTest {
   private UserIdentityFactory userIdentityFactory = mock(UserIdentityFactory.class);
   private OidcClient client = newMockClient();
 
-  private OidcIdentityProvider underTest = new OidcIdentityProvider(config, client, userIdentityFactory);
+  private OidcIdentityProvider underTest = new OidcIdentityProvider(oidcConfig, client, userIdentityFactory);
+
+  private void mockConfigValue(String key, String value){
+    when(config.get(property(key))).thenReturn(Optional.of(value));
+
+    if("true".equals(value) || "false".equals(value)){
+      when(config.getBoolean(property(key))).thenReturn(Optional.of(Boolean.parseBoolean(value)));
+    }
+  }
+  @Before
+  public void setup(){
+    config = mock(Configuration.class);
+    when(config.get(any())).thenReturn(Optional.empty());
+    when(config.getBoolean(any())).thenReturn(Optional.empty());
+    oidcConfig = new OidcConfiguration(config);
+    underTest = new OidcIdentityProvider(oidcConfig, client, userIdentityFactory);
+  }
 
   @Test
   public void check_fields() throws Exception {
@@ -47,18 +67,18 @@ public class OidcIdentityProviderTest extends AbstractOidcTest {
 
   @Test
   public void custom_name() throws Exception {
-    settings.setProperty(OidcConfiguration.LOGIN_BUTTON_TEXT, "My text");
+    mockConfigValue(OidcConfiguration.LOGIN_BUTTON_TEXT, "My text");
     assertThat(underTest.getName()).isEqualTo("My text");
   }
 
   @Test
   public void is_enabled() throws Exception {
-    settings.setProperty(OidcConfiguration.ENABLED, true);
-    settings.setProperty(OidcConfiguration.ISSUER_URI, ISSUER_URI);
-    settings.setProperty(OidcConfiguration.CLIENT_ID, "id");
+    mockConfigValue(OidcConfiguration.ENABLED, "true");
+    mockConfigValue(OidcConfiguration.ISSUER_URI, ISSUER_URI);
+    mockConfigValue(OidcConfiguration.CLIENT_ID, "id");
     assertThat(underTest.isEnabled()).isTrue();
 
-    settings.setProperty(OidcConfiguration.ENABLED, false);
+    mockConfigValue(OidcConfiguration.ENABLED, "false");
     assertThat(underTest.isEnabled()).isFalse();
   }
 
@@ -66,7 +86,7 @@ public class OidcIdentityProviderTest extends AbstractOidcTest {
   public void should_allow_users_to_signup() {
     assertThat(underTest.allowsUsersToSignUp()).as("default").isFalse();
 
-    settings.setProperty(OidcConfiguration.ALLOW_USERS_TO_SIGN_UP, true);
+    mockConfigValue(OidcConfiguration.ALLOW_USERS_TO_SIGN_UP, "true");
     assertThat(underTest.allowsUsersToSignUp()).isTrue();
   }
 
@@ -76,7 +96,7 @@ public class OidcIdentityProviderTest extends AbstractOidcTest {
     OAuth2IdentityProvider.InitContext context = mock(OAuth2IdentityProvider.InitContext.class);
     when(context.generateCsrfState()).thenReturn(STATE);
     when(context.getCallbackUrl()).thenReturn(CALLBACK_URL);
-    settings.setProperty(OidcConfiguration.ISSUER_URI, ISSUER_URI);
+    mockConfigValue(OidcConfiguration.ISSUER_URI, ISSUER_URI);
 
     underTest.init(context);
 
@@ -95,8 +115,8 @@ public class OidcIdentityProviderTest extends AbstractOidcTest {
 
   @Test
   public void display() {
-    settings.setProperty(OidcConfiguration.ICON_PATH, "my_path");
-    settings.setProperty(OidcConfiguration.BACKGROUND_COLOR, "#123456");
+    mockConfigValue(OidcConfiguration.ICON_PATH, "my_path");
+    mockConfigValue(OidcConfiguration.BACKGROUND_COLOR, "#123456");
 
     Display display = underTest.getDisplay();
     assertThat(display).isNotNull();

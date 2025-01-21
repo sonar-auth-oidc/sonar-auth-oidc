@@ -19,7 +19,6 @@ package org.vaulttec.sonarqube.auth.oidc;
 
 import java.io.IOException;
 
-import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -28,12 +27,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.sonar.api.server.ServerSide;
+import org.sonar.api.server.http.HttpRequest;
+import org.sonar.api.server.http.HttpResponse;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonar.api.web.ServletFilter;
+import org.sonar.api.web.FilterChain;
+import org.sonar.api.web.HttpFilter;
+import org.sonar.api.web.UrlPattern;
 
 @ServerSide
-public class AutoLoginFilter extends ServletFilter {
+public class AutoLoginFilter extends HttpFilter {
 
   private static final Logger LOGGER = Loggers.get(AutoLoginFilter.class);
 
@@ -53,17 +56,16 @@ public class AutoLoginFilter extends ServletFilter {
   }
 
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-      throws IOException, ServletException {
-    if (config.isEnabled() && config.isAutoLogin() && request instanceof HttpServletRequest) {
-      String referrer = ((HttpServletRequest) request).getHeader("referer");
+  public void doFilter(HttpRequest request, HttpResponse response, FilterChain chain) throws IOException {
+    if (config.isEnabled() && config.isAutoLogin()) {
+      String referrer = request.getHeader("referer");
       LOGGER.debug("Referrer: {}", referrer);
 
       // Skip if disabled via request parameter
       if (referrer == null || !referrer.endsWith(SKIP_REQUEST_PARAM)) {
         String loginPageUrl = config.getBaseUrl() + OIDC_URL + config.getContextPath() + "/projects";
         LOGGER.debug("Redirecting to OIDC login page: {}", loginPageUrl);
-        ((HttpServletResponse) response).sendRedirect(loginPageUrl);
+        response.sendRedirect(loginPageUrl);
         return;
       }
     }
@@ -71,10 +73,9 @@ public class AutoLoginFilter extends ServletFilter {
   }
 
   @Override
-  public void init(FilterConfig filterConfig) throws ServletException {
+  public void init(){
     // Not needed here
   }
-
   @Override
   public void destroy() {
     // Not needed here

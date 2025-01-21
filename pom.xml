@@ -3,7 +3,7 @@
 
 	<groupId>org.vaulttec.sonarqube.auth.oidc</groupId>
 	<artifactId>sonar-auth-oidc-plugin</artifactId>
-	<version>2.1.2-SNAPSHOT</version>
+	<version>3.0.0-SNAPSHOT</version>
 	<packaging>sonar-plugin</packaging>
 	<name>OpenID Connect Authentication for SonarQube</name>
 	<description>OpenID Connect Authentication for SonarQube</description>
@@ -19,11 +19,13 @@
 	</licenses>
 
 	<properties>
-		<java.version>1.8</java.version>
+		<java.version>11</java.version>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.complier.target>11</maven.complier.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<sonar.pluginClass>org.vaulttec.sonarqube.auth.oidc.AuthOidcPlugin</sonar.pluginClass>
 		<sonar.pluginKey>authoidc</sonar.pluginKey>
-		<sonar-plugin-api.version>7.4</sonar-plugin-api.version>
+		<sonar-plugin-api.version>11.0.0.2664</sonar-plugin-api.version>
 		<nimbusds-oidc-sdk.version>10.14.2</nimbusds-oidc-sdk.version>
 		<nimbusds-jose-jwt.version>9.31</nimbusds-jose-jwt.version>
 
@@ -128,8 +130,9 @@
 	</build>
 
 	<dependencies>
+
 		<dependency>
-			<groupId>org.sonarsource.sonarqube</groupId>
+			<groupId>org.sonarsource.api.plugin</groupId>
 			<artifactId>sonar-plugin-api</artifactId>
 			<version>${sonar-plugin-api.version}</version>
 			<scope>provided</scope>

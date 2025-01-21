@@ -17,24 +17,18 @@
  */
 package org.vaulttec.sonarqube.auth.oidc;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Optional;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.junit.Test;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.config.Configuration;
-import org.sonar.api.web.ServletFilter;
+import org.sonar.api.server.http.HttpRequest;
+import org.sonar.api.server.http.HttpResponse;
+import org.sonar.api.web.FilterChain;
+import org.sonar.api.web.HttpFilter;
+
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 public class AutoLoginFilterTest {
 
@@ -42,11 +36,6 @@ public class AutoLoginFilterTest {
 
   @Test
   public void testFilter() throws Exception {
-    ServletContext servletContext = mock(ServletContext.class);
-    when(servletContext.getContextPath()).thenReturn("/sonar");
-    FilterConfig filterConfig = mock(FilterConfig.class);
-    when(filterConfig.getServletContext()).thenReturn(servletContext);
-
     Configuration configurationMock = mock(Configuration.class);
     when(configurationMock.getBoolean("sonar.auth." + OidcIdentityProvider.KEY + ".enabled"))
         .thenReturn(Optional.of(true));
@@ -58,16 +47,15 @@ public class AutoLoginFilterTest {
         .thenReturn(Optional.of(true));
     when(configurationMock.get(CoreProperties.SERVER_BASE_URL)).thenReturn(Optional.of(SONAR_URL));
 
-    ServletFilter filter = new AutoLoginFilter(new OidcConfiguration(configurationMock));
-    filter.init(filterConfig);
+    HttpFilter filter = new AutoLoginFilter(new OidcConfiguration(configurationMock));
+    filter.init();
     filter.doGetPattern();
 
-    HttpServletRequest request = mock(HttpServletRequest.class);
-    when(request.getRequestURL()).thenReturn(new StringBuffer(SONAR_URL + "/sessions/new"));
+    HttpRequest request = mock(HttpRequest.class);
+    when(request.getRequestURI()).thenReturn(String.valueOf(SONAR_URL + "/sessions/new"));
     when(request.getServerName()).thenReturn("acme.com");
 
-    HttpServletResponse response = mock(HttpServletResponse.class);
-
+    HttpResponse response = mock(HttpResponse.class);
     FilterChain chain = mock(FilterChain.class);
     filter.doFilter(request, response, chain);
 
@@ -78,11 +66,6 @@ public class AutoLoginFilterTest {
 
   @Test
   public void testFilterDisbled() throws Exception {
-    ServletContext servletContext = mock(ServletContext.class);
-    when(servletContext.getContextPath()).thenReturn("/sonar");
-    FilterConfig filterConfig = mock(FilterConfig.class);
-    when(filterConfig.getServletContext()).thenReturn(servletContext);
-
     Configuration configurationMock = mock(Configuration.class);
     when(configurationMock.getBoolean("sonar.auth." + OidcIdentityProvider.KEY + ".enabled"))
         .thenReturn(Optional.of(true));
@@ -94,15 +77,15 @@ public class AutoLoginFilterTest {
         .thenReturn(Optional.of(false));
     when(configurationMock.get(CoreProperties.SERVER_BASE_URL)).thenReturn(Optional.of(SONAR_URL));
 
-    ServletFilter filter = new AutoLoginFilter(new OidcConfiguration(configurationMock));
-    filter.init(filterConfig);
+    HttpFilter filter = new AutoLoginFilter(new OidcConfiguration(configurationMock));
+    filter.init();
     filter.doGetPattern();
 
-    HttpServletRequest request = mock(HttpServletRequest.class);
-    when(request.getRequestURL()).thenReturn(new StringBuffer(SONAR_URL + "/sessions/new"));
+    HttpRequest request = mock(HttpRequest.class);
+    when(request.getRequestURL()).thenReturn(String.valueOf(SONAR_URL + "/sessions/new"));
     when(request.getServerName()).thenReturn("acme.com");
 
-    HttpServletResponse response = mock(HttpServletResponse.class);
+    HttpResponse response = mock(HttpResponse.class);
 
     FilterChain chain = mock(FilterChain.class);
     filter.doFilter(request, response, chain);
@@ -114,11 +97,6 @@ public class AutoLoginFilterTest {
 
   @Test
   public void testFilterTemporarilyDisbled() throws Exception {
-    ServletContext servletContext = mock(ServletContext.class);
-    when(servletContext.getContextPath()).thenReturn("/sonar");
-    FilterConfig filterConfig = mock(FilterConfig.class);
-    when(filterConfig.getServletContext()).thenReturn(servletContext);
-
     Configuration configurationMock = mock(Configuration.class);
     when(configurationMock.getBoolean(OidcConfiguration.ENABLED)).thenReturn(Optional.of(true));
     when(configurationMock.get(OidcConfiguration.ISSUER_URI)).thenReturn(Optional.of("http://idp.com"));
@@ -126,16 +104,16 @@ public class AutoLoginFilterTest {
     when(configurationMock.getBoolean(OidcConfiguration.AUTO_LOGIN)).thenReturn(Optional.of(true));
     when(configurationMock.get(CoreProperties.SERVER_BASE_URL)).thenReturn(Optional.of(SONAR_URL));
 
-    ServletFilter filter = new AutoLoginFilter(new OidcConfiguration(configurationMock));
-    filter.init(filterConfig);
+    HttpFilter filter = new AutoLoginFilter(new OidcConfiguration(configurationMock));
+    filter.init();
     filter.doGetPattern();
 
-    HttpServletRequest request = mock(HttpServletRequest.class);
-    when(request.getRequestURL()).thenReturn(new StringBuffer(SONAR_URL + "/sessions/new"));
+    HttpRequest request = mock(HttpRequest.class);
+    when(request.getRequestURL()).thenReturn(String.valueOf(SONAR_URL + "/sessions/new"));
     when(request.getServerName()).thenReturn("acme.com");
     when(request.getHeader("referer")).thenReturn(SONAR_URL + "/?auto-login=false");
 
-    HttpServletResponse response = mock(HttpServletResponse.class);
+    HttpResponse response = mock(HttpResponse.class);
 
     FilterChain chain = mock(FilterChain.class);
     filter.doFilter(request, response, chain);
