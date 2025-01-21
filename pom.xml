@@ -25,7 +25,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<sonar.pluginClass>org.vaulttec.sonarqube.auth.oidc.AuthOidcPlugin</sonar.pluginClass>
 		<sonar.pluginKey>authoidc</sonar.pluginKey>
-		<sonar-plugin-api.version>11.1.0.2693</sonar-plugin-api.version>
+		<sonar-plugin-api.version>11.0.0.2664</sonar-plugin-api.version>
 		<nimbusds-oidc-sdk.version>10.14.2</nimbusds-oidc-sdk.version>
 		<nimbusds-jose-jwt.version>9.31</nimbusds-jose-jwt.version>
 
