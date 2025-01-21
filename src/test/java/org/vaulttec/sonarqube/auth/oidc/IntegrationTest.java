@@ -17,6 +17,23 @@
  */
 package org.vaulttec.sonarqube.auth.oidc;
 
+import com.nimbusds.common.contenttype.ContentType;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.sonar.api.server.authentication.OAuth2IdentityProvider;
+import org.sonar.api.server.authentication.UserIdentity;
+import org.sonar.api.server.http.HttpRequest;
+import org.sonar.api.server.http.HttpResponse;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static java.lang.String.format;
 import static java.net.URLEncoder.encode;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,26 +41,6 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import com.nimbusds.common.contenttype.ContentType;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.sonar.api.server.authentication.OAuth2IdentityProvider;
-import org.sonar.api.server.authentication.UserIdentity;
-
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
 
 public class IntegrationTest extends AbstractOidcTest {
 
@@ -59,8 +56,8 @@ public class IntegrationTest extends AbstractOidcTest {
   public void init() {
     setSettings(true, idpUri);
     oidcClient = createSpyOidcClient();
-    userIdentityFactory = new UserIdentityFactory(config);
-    underTest = new OidcIdentityProvider(config, oidcClient, userIdentityFactory);
+    userIdentityFactory = new UserIdentityFactory(oidcConfig);
+    underTest = new OidcIdentityProvider(oidcConfig, oidcClient, userIdentityFactory);
   }
 
   /**
@@ -84,7 +81,7 @@ public class IntegrationTest extends AbstractOidcTest {
   @Test
   public void callback_on_successful_authentication() throws IOException, InterruptedException {
     idp.enqueue(newSuccessfulAccessTokenResponse());
-    HttpServletRequest request = newAuthenticationRequest();
+    HttpRequest request = newAuthenticationRequest();
     DumbCallbackContext callbackContext = new DumbCallbackContext(request);
     underTest.callback(callbackContext);
 
@@ -112,7 +109,7 @@ public class IntegrationTest extends AbstractOidcTest {
       throws IOException, InterruptedException {
     idp.enqueue(newSuccessfulAccessTokenResponseWithoutUserInfo());
     idp.enqueue(newUserInfoResponse());
-    HttpServletRequest request = newAuthenticationRequest();
+    HttpRequest request = newAuthenticationRequest();
     DumbCallbackContext callbackContext = new DumbCallbackContext(request);
     underTest.callback(callbackContext);
 
@@ -140,7 +137,7 @@ public class IntegrationTest extends AbstractOidcTest {
       throws IOException, InterruptedException {
     idp.enqueue(newSuccessfulAccessTokenResponseWithoutGroupsClaim());
     idp.enqueue(newUserInfoResponse());
-    HttpServletRequest request = newAuthenticationRequest();
+    HttpRequest request = newAuthenticationRequest();
     DumbCallbackContext callbackContext = new DumbCallbackContext(request);
     underTest.callback(callbackContext);
 
@@ -179,8 +176,8 @@ public class IntegrationTest extends AbstractOidcTest {
     assertThat(accessTokenRequest.getPath()).startsWith("/protocol/openid-connect/token");
   }
 
-  private static HttpServletRequest newAuthenticationRequest() {
-    HttpServletRequest request = mock(HttpServletRequest.class);
+  private static HttpRequest newAuthenticationRequest() {
+    HttpRequest request = mock(HttpRequest.class);
     when(request.getMethod()).thenReturn("GET");
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
     when(request.getQueryString()).thenReturn("state=" + STATE + "&code=" + VALID_CODE);
@@ -221,12 +218,12 @@ public class IntegrationTest extends AbstractOidcTest {
   }
 
   private static class DumbCallbackContext implements OAuth2IdentityProvider.CallbackContext {
-    final HttpServletRequest request;
+    final HttpRequest request;
     final AtomicBoolean csrfStateVerified = new AtomicBoolean(false);
     final AtomicBoolean redirectedToRequestedPage = new AtomicBoolean(false);
     UserIdentity userIdentity = null;
 
-    public DumbCallbackContext(HttpServletRequest request) {
+    public DumbCallbackContext(HttpRequest request) {
       this.request = request;
     }
 
@@ -251,12 +248,12 @@ public class IntegrationTest extends AbstractOidcTest {
     }
 
     @Override
-    public HttpServletRequest getRequest() {
+    public HttpRequest getHttpRequest() {
       return request;
     }
 
     @Override
-    public HttpServletResponse getResponse() {
+    public HttpResponse getHttpResponse() {
       throw new UnsupportedOperationException("not used");
     }
 
@@ -289,12 +286,12 @@ public class IntegrationTest extends AbstractOidcTest {
     }
 
     @Override
-    public HttpServletRequest getRequest() {
+    public HttpRequest getHttpRequest() {
       return null;
     }
 
     @Override
-    public HttpServletResponse getResponse() {
+    public HttpResponse getHttpResponse() {
       return null;
     }
   }

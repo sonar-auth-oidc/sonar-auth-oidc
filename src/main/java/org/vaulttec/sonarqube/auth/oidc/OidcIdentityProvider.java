@@ -85,7 +85,7 @@ public class OidcIdentityProvider implements OAuth2IdentityProvider {
   public void callback(CallbackContext context) {
     LOGGER.debug("Handling authentication response");
     context.verifyCsrfState();
-    AuthorizationCode authorizationCode = client.getAuthorizationCode(context.getRequest());
+    AuthorizationCode authorizationCode = client.getAuthorizationCode(context.getHttpRequest());
     UserInfo userInfo = client.getUserInfo(authorizationCode, context.getCallbackUrl());
     UserIdentity userIdentity = userIdentityFactory.create(userInfo);
     LOGGER.debug("Authenticating user '{}' with groups {}", userIdentity.getProviderLogin(), userIdentity.getGroups());
