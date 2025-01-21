@@ -50,6 +50,7 @@ import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import org.junit.Test;
 
 import net.minidev.json.JSONObject;
+import org.sonar.api.server.http.HttpRequest;
 
 public class OidcClientTest extends AbstractOidcTest {
 
@@ -84,7 +85,7 @@ public class OidcClientTest extends AbstractOidcTest {
   @Test
   public void getAuthorizationCode() {
     OidcClient underTest = newSpyOidcClient();
-    HttpServletRequest request = mock(HttpServletRequest.class);
+    HttpRequest request = mock(HttpRequest.class);
     when(request.getMethod()).thenReturn("GET");
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
     when(request.getQueryString()).thenReturn("state=" + STATE + "&code=" + VALID_CODE);
@@ -96,9 +97,9 @@ public class OidcClientTest extends AbstractOidcTest {
   @Test
   public void invalidAuthenticationResponseUri() {
     OidcClient underTest = newSpyOidcClient();
-    HttpServletRequest request = mock(HttpServletRequest.class);
+    HttpRequest request = mock(HttpRequest.class);
     when(request.getMethod()).thenReturn("GET");
-    when(request.getLocalAddr()).thenReturn("invalid . com");
+    when(request.getRemoteAddr()).thenReturn("invalid . com");
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
     try {
       underTest.getAuthorizationCode(request);
@@ -111,7 +112,7 @@ public class OidcClientTest extends AbstractOidcTest {
   @Test
   public void authenticationErrorResponse() {
     OidcClient underTest = newSpyOidcClient();
-    HttpServletRequest request = mock(HttpServletRequest.class);
+    HttpRequest request = mock(HttpRequest.class);
     when(request.getMethod()).thenReturn("GET");
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
     when(request.getQueryString())
