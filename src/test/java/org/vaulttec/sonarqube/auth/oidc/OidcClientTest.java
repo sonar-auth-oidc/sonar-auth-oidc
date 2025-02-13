@@ -29,8 +29,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.ErrorObject;
@@ -88,6 +86,7 @@ public class OidcClientTest extends AbstractOidcTest {
     HttpRequest request = mock(HttpRequest.class);
     when(request.getMethod()).thenReturn("GET");
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
+    when(request.getRequestURL()).thenReturn("http://:0");
     when(request.getQueryString()).thenReturn("state=" + STATE + "&code=" + VALID_CODE);
 
     AuthorizationCode code = underTest.getAuthorizationCode(request);
@@ -99,13 +98,13 @@ public class OidcClientTest extends AbstractOidcTest {
     OidcClient underTest = newSpyOidcClient();
     HttpRequest request = mock(HttpRequest.class);
     when(request.getMethod()).thenReturn("GET");
-    when(request.getRemoteAddr()).thenReturn("invalid . com");
+    when(request.getRequestURL()).thenReturn("http://invalid . com");
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
     try {
       underTest.getAuthorizationCode(request);
       failBecauseExceptionWasNotThrown(IllegalStateException.class);
     } catch (IllegalStateException e) {
-      assertEquals("Error while parsing callback request", e.getMessage());
+      assertEquals("Error while processing callback request", e.getMessage());
     }
   }
 
@@ -115,6 +114,7 @@ public class OidcClientTest extends AbstractOidcTest {
     HttpRequest request = mock(HttpRequest.class);
     when(request.getMethod()).thenReturn("GET");
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
+    when(request.getRequestURL()).thenReturn("http://:0");
     when(request.getQueryString())
         .thenReturn("error=invalid_request&error_description=the request is not valid or malformed");
     try {

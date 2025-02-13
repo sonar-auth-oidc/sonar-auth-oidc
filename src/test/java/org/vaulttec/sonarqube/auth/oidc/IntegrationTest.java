@@ -179,6 +179,7 @@ public class IntegrationTest extends AbstractOidcTest {
   private static HttpRequest newAuthenticationRequest() {
     HttpRequest request = mock(HttpRequest.class);
     when(request.getMethod()).thenReturn("GET");
+    when(request.getRequestURL()).thenReturn("http://:0");
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
     when(request.getQueryString()).thenReturn("state=" + STATE + "&code=" + VALID_CODE);
     return request;

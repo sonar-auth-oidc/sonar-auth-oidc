@@ -24,6 +24,8 @@ import static org.vaulttec.sonarqube.auth.oidc.OidcConfiguration.LOGIN_STRATEGY_
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.validators.IDTokenValidator;
+
+import org.junit.Before;
 import org.sonar.api.config.Configuration;
 
 
@@ -38,41 +40,34 @@ public abstract class AbstractOidcTest {
   public static final String STATE = "state";
   public static final String VALID_CODE = "valid_code";
 
-  protected OidcConfiguration oidcConfig;
-  protected Configuration config;
+  private Configuration config = mock(Configuration.class);
+  protected Map<String, String> settings = new HashMap<>();
+  protected OidcConfiguration oidcConfig = new OidcConfiguration(config);
 
+  @Before
+  public void initConfig() {
+      when(config.get(any())).thenAnswer(invocation -> Optional.of(settings.get(invocation.getArgument(0))));
+      when(config.getBoolean(any())).thenAnswer(invocation -> Optional.of(Boolean.parseBoolean(settings.get(invocation.getArgument(0)))));
+  }
 
   protected void setSettings(boolean enabled) {
     setSettings(enabled, ISSUER_URI);
   }
 
   protected void setSettings(boolean enabled, String issuerUri) {
-    Map<String, String> settings = new HashMap<>();
     if (enabled) {
-      settings.put(property(OidcConfiguration.ENABLED), "true");
-      settings.put(property(OidcConfiguration.ISSUER_URI), issuerUri);
-      settings.put(property(OidcConfiguration.CLIENT_ID), "id");
-      settings.put(property(OidcConfiguration.CLIENT_SECRET), "secret");
-      settings.put(property(OidcConfiguration.ID_TOKEN_SIG_ALG), "RS256");
-      settings.put(property(OidcConfiguration.LOGIN_STRATEGY), LOGIN_STRATEGY_DEFAULT_VALUE);
-      settings.put(property(OidcConfiguration.GROUPS_SYNC), "true");
-      settings.put(property(OidcConfiguration.GROUPS_SYNC_CLAIM_NAME), "myGroups");
-      settings.put(property(OidcConfiguration.SCOPES), "openid email profile");
+      settings.put(OidcConfiguration.ENABLED, "true");
+      settings.put(OidcConfiguration.ISSUER_URI, issuerUri);
+      settings.put(OidcConfiguration.CLIENT_ID, "id");
+      settings.put(OidcConfiguration.CLIENT_SECRET, "secret");
+      settings.put(OidcConfiguration.ID_TOKEN_SIG_ALG, "RS256");
+      settings.put(OidcConfiguration.LOGIN_STRATEGY, LOGIN_STRATEGY_DEFAULT_VALUE);
+      settings.put(OidcConfiguration.GROUPS_SYNC, "true");
+      settings.put(OidcConfiguration.GROUPS_SYNC_CLAIM_NAME, "myGroups");
+      settings.put(OidcConfiguration.SCOPES, "openid email profile");
     } else {
-      settings.put(property(OidcConfiguration.ENABLED), "false");
+      settings.put(OidcConfiguration.ENABLED, "false");
     }
-
-    config = mock(Configuration.class);
-    for(Map.Entry<String, String> entry: settings.entrySet()){
-      when(config.get(entry.getKey())).thenReturn(Optional.of(entry.getValue()));
-      when(config.getBoolean(entry.getKey())).thenReturn(Optional.of(Boolean.parseBoolean(entry.getValue())));
-    }
-
-    this.oidcConfig =  new OidcConfiguration(config);
-  }
-
-  protected static String property(String suffix){
-    return "sonar.auth" + OidcIdentityProvider.KEY + "." + suffix;
   }
 
   protected OIDCProviderMetadata getProviderMetadata(String issuerUri) {
