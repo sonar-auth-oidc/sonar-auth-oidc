@@ -26,8 +26,8 @@
 		<sonar.pluginClass>org.vaulttec.sonarqube.auth.oidc.AuthOidcPlugin</sonar.pluginClass>
 		<sonar.pluginKey>authoidc</sonar.pluginKey>
 		<sonar-plugin-api.version>11.0.0.2664</sonar-plugin-api.version>
-		<nimbusds-oidc-sdk.version>10.14.2</nimbusds-oidc-sdk.version>
-		<nimbusds-jose-jwt.version>9.31</nimbusds-jose-jwt.version>
+		<nimbusds-oidc-sdk.version>11.24</nimbusds-oidc-sdk.version>
+		<nimbusds-jose-jwt.version>10.3</nimbusds-jose-jwt.version>
 
 		<license.name>AL2</license.name>
 		<license.owner>Torsten Juergeleit</license.owner>
