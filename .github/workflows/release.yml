@@ -21,7 +21,7 @@ jobs:
           distribution: "adopt"
 
       - name: Build release and report to SonarQube Cloud
-        run: mvn -B clean org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report sonar:sonar -Dsonar.organization=vaulttec -Dsonar.projectKey=org.vaulttec.sonarqube.auth.oidc:sonar-auth-oidc-plugin -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=$SONAR_TOKEN
+        run: mvn -B clean org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report sonar:sonar -Dsonar.organization=sonar-auth-oidc -Dsonar.projectKey=sonar-auth-oidc_sonar-auth-oidc -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=$SONAR_TOKEN
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
