@@ -13,7 +13,7 @@ cd sonar-auth-oidc
 
 ```
 git checkout <release tag>
-./mvnw clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar -Dsonar.host.url=https://sonarcloud.io -Dsonar.organization=vaulttec -Dsonar.login=<security token>
+./mvnw clean org.jacoco:jacoco-maven-plugin:prepare-agent package sonar:sonar -Dsonar.host.url=https://sonarcloud.io -Dsonar.organization=sonar-auth-oidc -Dsonar.login=<security token>
 
 ```
 

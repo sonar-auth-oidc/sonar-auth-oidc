@@ -1,5 +1,5 @@
 # OpenID Connect (OIDC) Plugin for SonarQube
-[![Build Status](https://github.com/vaulttec/sonar-auth-oidc/actions/workflows/build.yml/badge.svg)](https://github.com/vaulttec/sonar-auth-oidc/actions/workflows/build.yml) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=org.vaulttec.sonarqube.auth.oidc%3Asonar-auth-oidc-plugin&metric=alert_status)](https://sonarcloud.io/dashboard?id=org.vaulttec.sonarqube.auth.oidc%3Asonar-auth-oidc-plugin) [![Release](https://img.shields.io/github/release/vaulttec/sonar-auth-oidc.svg)](https://github.com/vaulttec/sonar-auth-oidc/releases/latest) [![Marketplace](https://img.shields.io/badge/Marketplace-authoidc-orange?logo=SonarQube)](https://www.sonarplugins.com/authoidc)
+[![Build Status](https://github.com/sonar-auth-oidc/sonar-auth-oidc/actions/workflows/build.yml/badge.svg)](https://github.com/sonar-auth-oidc/sonar-auth-oidc/actions/workflows/build.yml) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=sonar-auth-oidc_sonar-auth-oidc&metric=alert_status)](https://sonarcloud.io/dashboard?id=org.vaulttec.sonarqube.auth.oidc%3Asonar-auth-oidc-plugin) [![Release](https://img.shields.io/github/release/sonar-auth-oidc/sonar-auth-oidc.svg)](https://github.com/sonar-auth-oidc/sonar-auth-oidc/releases/latest) [![Marketplace](https://img.shields.io/badge/Marketplace-authoidc-orange?logo=SonarQube)](https://www.sonarplugins.com/authoidc)
 
 ## Description
 
@@ -33,7 +33,7 @@ If a [network proxy](https://docs.oracle.com/javase/8/docs/api/java/net/doc-file
 
 ## Installation
 
-1. Install the plugin from [SonarQube marketplace](https://docs.sonarqube.org/display/SONAR/Marketplace) via "Administration > Marketplace". Or download the plugin jar from [GitHub Releases](https://github.com/vaulttec/sonar-auth-oidc/releases) and put it into the `SONARQUBE_HOME/extensions/plugins/` directory
+1. Install the plugin from [SonarQube marketplace](https://docs.sonarsource.com/sonarqube-server/latest/server-upgrade-and-maintenance/upgrade/marketplace/) via "Administration > Marketplace". Or download the plugin jar from [GitHub Releases](https://github.com/sonar-auth-oidc/sonar-auth-oidc/releases) and put it into the `SONARQUBE_HOME/extensions/plugins/` directory
 1. Restart the SonarQube server
 
 ## Configuration

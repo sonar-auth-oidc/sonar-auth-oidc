@@ -8,7 +8,7 @@
 	<name>OpenID Connect Authentication for SonarQube</name>
 	<description>OpenID Connect Authentication for SonarQube</description>
 	<inceptionYear>2017</inceptionYear>
-	<url>https://github.com/vaulttec/sonar-auth-oidc</url>
+	<url>https://github.com/sonar-auth-oidc/sonar-auth-oidc</url>
 
 	<licenses>
 		<license>
@@ -38,18 +38,18 @@
 
 	<issueManagement>
 		<system>github</system>
-		<url>https://github.com/vaulttec/sonar-auth-oidc/issues</url>
+		<url>https://github.com/sonar-auth-oidc/sonar-auth-oidc/issues</url>
 	</issueManagement>
 
 	<ciManagement>
 		<system>github-actions</system>
-		<url>https://github.com/vaulttec/sonar-auth-oidc/actions</url>
+		<url>https://github.com/sonar-auth-oidc/sonar-auth-oidc/actions</url>
 	</ciManagement>
 
 	<scm>
-		<connection>scm:git:https://github.com/vaulttec/sonar-auth-oidc.git</connection>
-		<developerConnection>scm:git:git@github.com:vaulttec/sonar-auth-oidc.git</developerConnection>
-		<url>https://github.com/vaulttec/sonar-auth-oidc</url>
+		<connection>scm:git:https://github.com/sonar-auth-oidc/sonar-auth-oidc.git</connection>
+		<developerConnection>scm:git:git@github.com:sonar-auth-oidc/sonar-auth-oidc.git</developerConnection>
+		<url>https://github.com/sonar-auth-oidc/sonar-auth-oidc</url>
 		<tag>HEAD</tag>
 	</scm>
 
