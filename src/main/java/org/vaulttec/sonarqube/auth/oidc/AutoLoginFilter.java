@@ -17,11 +17,11 @@
  */
 package org.vaulttec.sonarqube.auth.oidc;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonar.api.server.ServerSide;
 import org.sonar.api.server.http.HttpRequest;
 import org.sonar.api.server.http.HttpResponse;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.web.FilterChain;
 import org.sonar.api.web.HttpFilter;
 import org.sonar.api.web.UrlPattern;
@@ -31,7 +31,7 @@ import java.io.IOException;
 @ServerSide
 public class AutoLoginFilter extends HttpFilter {
 
-  private static final Logger LOGGER = Loggers.get(AutoLoginFilter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AutoLoginFilter.class);
 
   private static final String LOGIN_URL = "/sessions/new";
   private static final String OIDC_URL = "/sessions/init/" + OidcIdentityProvider.KEY + "?return_to=";
