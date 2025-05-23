@@ -180,7 +180,7 @@ public class OidcClientTest extends AbstractOidcTest {
 
   @Test
   public void getUserInfoFromUserInfoEndpoint() {
-    OidcClient underTest = newSpyOidcClientWithoutProfileInformation();
+    OidcClient underTest = newSpyOidcClientWithoutProfileInformation3();
     UserInfo userInfo = underTest.getUserInfo(new AuthorizationCode(VALID_CODE), CALLBACK_URL);
     assertEquals("e65c9607-fd4e-4bcd-97b1-ca057616590e", userInfo.getSubject().getValue());
     assertEquals("john.doo", userInfo.getPreferredUsername());
@@ -193,7 +193,7 @@ public class OidcClientTest extends AbstractOidcTest {
 
   @Test
   public void userInfoErrorResponse() {
-    OidcClient underTest = newSpyOidcClientWithoutProfileInformation();
+    OidcClient underTest = newSpyOidcClientWithoutProfileInformation2();
     UserInfoErrorResponse userInfoResponse = new UserInfoErrorResponse(new ErrorObject("some_error"));
     doReturn(userInfoResponse).when(underTest)
         .getUserInfoResponse(getProviderMetadata(ISSUER_URI).getUserInfoEndpointURI(), INVALID_BEARER_ACCESS_TOKEN);
@@ -208,7 +208,7 @@ public class OidcClientTest extends AbstractOidcTest {
 
   @Test
   public void userInfoErrorResponseWithoutErrorCode() {
-    OidcClient underTest = newSpyOidcClientWithoutProfileInformation();
+    OidcClient underTest = newSpyOidcClientWithoutProfileInformation2();
     UserInfoErrorResponse userInfoResponse = new UserInfoErrorResponse(new ErrorObject(null));
     doReturn(userInfoResponse).when(underTest)
         .getUserInfoResponse(getProviderMetadata(ISSUER_URI).getUserInfoEndpointURI(), INVALID_BEARER_ACCESS_TOKEN);
@@ -276,6 +276,36 @@ public class OidcClientTest extends AbstractOidcTest {
           getProviderMetadata(ISSUER_URI).getUserInfoEndpointURI(),
           tokenResponse.getOIDCTokens().getBearerAccessToken());
 
+      doCallRealMethod().when(client).getUserInfo(new AuthorizationCode(VALID_CODE), CALLBACK_URL);
+    } catch (ParseException | java.text.ParseException e) {
+      // ignore
+    }
+    return client;
+  }
+
+  private OidcClient newSpyOidcClientWithoutProfileInformation2() {
+    setSettings(true);
+    OidcClient client = createSpyOidcClient();
+    try {
+      OIDCTokenResponse tokenResponse = OIDCTokenResponse.parse(new JSONObject(JSONObjectUtils.parse("{\"id_token\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJzdWIiOiJlNjVjOTYwNy1mZDRlLTRiY2QtOTdiMS1jYTA1NzYxNjU5MGUiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvaHViIiwiYXVkIjpbIjYwZGNhY2FmLThhOTQtNDE3Ny1iMmYyLTEzNDg0NjNmODhjZSJdLCJleHAiOjEuNTIzNTcyMTY3NTYxRTksImlhdCI6MS41MTU3OTYxNjc1OTdFOSwiYXV0aF90aW1lIjoxLjUxNTc5NjE2NzU2MUU5fQ.o_h3f6QK--p1Ru8pUquoLpvB1vdBCorUfdq_I8J_yBbjyPS4LUP9-e_xkXtql6yOSh9AewNUb7PSKnJOq-TlMMMlOr-Or676i1wT0hGQb2aKnzzFu7VYQOep8_6t-AQSXRhckaR5NIJnF6oxFWdTwhizcenO_Osf12R-PQOyQsA\"," + "\"access_token\":\"1515799767598.60dcacaf-8a94-4177-b2f2-1348463f88ce.e65c9607-fd4e-4bcd-97b1-ca057616590e.0-0-0-0-0;1.MCwCFEjmjjDDL1yAQ+jYA+VxgYNNNr4hAhR66eAgXKfs6kOJehOALtRqw5wq9Q==\"," + "\"token_type\":\"Bearer\"," + "\"expires_in\":3600," + "\"scope\":\"0-0-0-0-0\"}")));
+      OIDCTokenResponse invalidTokenResponse = OIDCTokenResponse.parse(new JSONObject(JSONObjectUtils.parse("{\"id_token\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJzdWIiOiJlNjVjOTYwNy1mZDRlLTRiY2QtOTdiMS1jYTA1NzYxNjU5MGUiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvaHViIiwiYXVkIjpbIjYwZGNhY2FmLThhOTQtNDE3Ny1iMmYyLTEzNDg0NjNmODhjZSJdLCJleHAiOjEuNTIzNTcyMTY3NTYxRTksImlhdCI6MS41MTU3OTYxNjc1OTdFOSwiYXV0aF90aW1lIjoxLjUxNTc5NjE2NzU2MUU5fQ.o_h3f6QK--p1Ru8pUquoLpvB1vdBCorUfdq_I8J_yBbjyPS4LUP9-e_xkXtql6yOSh9AewNUb7PSKnJOq-TlMMMlOr-Or676i1wT0hGQb2aKnzzFu7VYQOep8_6t-AQSXRhckaR5NIJnF6oxFWdTwhizcenO_Osf12R-PQOyQsA\"," + "\"access_token\":\"invalid\"," + "\"token_type\":\"Bearer\"," + "\"expires_in\":3600," + "\"scope\":\"0-0-0-0-0\"}")));
+      doReturn(invalidTokenResponse).when(client).getTokenResponse(getProviderMetadata(ISSUER_URI).getTokenEndpointURI(), new AuthorizationCode(INVALID_CODE), CALLBACK_URL);
+      UserInfoSuccessResponse userInfoResponse = new UserInfoSuccessResponse(new UserInfo(new JSONObject(JSONObjectUtils.parse("{\"sub\":\"e65c9607-fd4e-4bcd-97b1-ca057616590e\"," + "\"name\":\"John Doo\",\"preferred_username\":\"john.doo\"," + "\"profile\":\"http://localhost:8080/hub/users/e65c9607-fd4e-4bcd-97b1-ca057616590e\"," + "\"email\":\"john.doo@acme.com\",\"email_verified\":true}"))));
+    } catch (ParseException | java.text.ParseException e) {
+      // ignore
+    }
+    return client;
+  }
+
+  private OidcClient newSpyOidcClientWithoutProfileInformation3() {
+    setSettings(true);
+    OidcClient client = createSpyOidcClient();
+    try {
+      OIDCTokenResponse tokenResponse = OIDCTokenResponse.parse(new JSONObject(JSONObjectUtils.parse("{\"id_token\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJzdWIiOiJlNjVjOTYwNy1mZDRlLTRiY2QtOTdiMS1jYTA1NzYxNjU5MGUiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvaHViIiwiYXVkIjpbIjYwZGNhY2FmLThhOTQtNDE3Ny1iMmYyLTEzNDg0NjNmODhjZSJdLCJleHAiOjEuNTIzNTcyMTY3NTYxRTksImlhdCI6MS41MTU3OTYxNjc1OTdFOSwiYXV0aF90aW1lIjoxLjUxNTc5NjE2NzU2MUU5fQ.o_h3f6QK--p1Ru8pUquoLpvB1vdBCorUfdq_I8J_yBbjyPS4LUP9-e_xkXtql6yOSh9AewNUb7PSKnJOq-TlMMMlOr-Or676i1wT0hGQb2aKnzzFu7VYQOep8_6t-AQSXRhckaR5NIJnF6oxFWdTwhizcenO_Osf12R-PQOyQsA\"," + "\"access_token\":\"1515799767598.60dcacaf-8a94-4177-b2f2-1348463f88ce.e65c9607-fd4e-4bcd-97b1-ca057616590e.0-0-0-0-0;1.MCwCFEjmjjDDL1yAQ+jYA+VxgYNNNr4hAhR66eAgXKfs6kOJehOALtRqw5wq9Q==\"," + "\"token_type\":\"Bearer\"," + "\"expires_in\":3600," + "\"scope\":\"0-0-0-0-0\"}")));
+      doReturn(tokenResponse).when(client).getTokenResponse(getProviderMetadata(ISSUER_URI).getTokenEndpointURI(), new AuthorizationCode(VALID_CODE), CALLBACK_URL);
+      OIDCTokenResponse invalidTokenResponse = OIDCTokenResponse.parse(new JSONObject(JSONObjectUtils.parse("{\"id_token\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJzdWIiOiJlNjVjOTYwNy1mZDRlLTRiY2QtOTdiMS1jYTA1NzYxNjU5MGUiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvaHViIiwiYXVkIjpbIjYwZGNhY2FmLThhOTQtNDE3Ny1iMmYyLTEzNDg0NjNmODhjZSJdLCJleHAiOjEuNTIzNTcyMTY3NTYxRTksImlhdCI6MS41MTU3OTYxNjc1OTdFOSwiYXV0aF90aW1lIjoxLjUxNTc5NjE2NzU2MUU5fQ.o_h3f6QK--p1Ru8pUquoLpvB1vdBCorUfdq_I8J_yBbjyPS4LUP9-e_xkXtql6yOSh9AewNUb7PSKnJOq-TlMMMlOr-Or676i1wT0hGQb2aKnzzFu7VYQOep8_6t-AQSXRhckaR5NIJnF6oxFWdTwhizcenO_Osf12R-PQOyQsA\"," + "\"access_token\":\"invalid\"," + "\"token_type\":\"Bearer\"," + "\"expires_in\":3600," + "\"scope\":\"0-0-0-0-0\"}")));
+      UserInfoSuccessResponse userInfoResponse = new UserInfoSuccessResponse(new UserInfo(new JSONObject(JSONObjectUtils.parse("{\"sub\":\"e65c9607-fd4e-4bcd-97b1-ca057616590e\"," + "\"name\":\"John Doo\",\"preferred_username\":\"john.doo\"," + "\"profile\":\"http://localhost:8080/hub/users/e65c9607-fd4e-4bcd-97b1-ca057616590e\"," + "\"email\":\"john.doo@acme.com\",\"email_verified\":true}"))));
+      doReturn(userInfoResponse).when(client).getUserInfoResponse(getProviderMetadata(ISSUER_URI).getUserInfoEndpointURI(), tokenResponse.getOIDCTokens().getBearerAccessToken());
       doCallRealMethod().when(client).getUserInfo(new AuthorizationCode(VALID_CODE), CALLBACK_URL);
     } catch (ParseException | java.text.ParseException e) {
       // ignore
