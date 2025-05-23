@@ -37,13 +37,13 @@ public class AutoLoginFilterTest {
   @Test
   public void testFilter() throws Exception {
     Configuration configurationMock = mock(Configuration.class);
-    when(configurationMock.getBoolean("sonar.auth." + OidcIdentityProvider.KEY + ".enabled"))
+    when(configurationMock.getBoolean("sonar.auth." + Constants.OIDC_IDENTITY_PROVIDER_KEY + ".enabled"))
         .thenReturn(Optional.of(true));
-    when(configurationMock.get("sonar.auth." + OidcIdentityProvider.KEY + ".issuerUri"))
+    when(configurationMock.get("sonar.auth." + Constants.OIDC_IDENTITY_PROVIDER_KEY + ".issuerUri"))
         .thenReturn(Optional.of("http://idp.com"));
-    when(configurationMock.get("sonar.auth." + OidcIdentityProvider.KEY + ".clientId.secured"))
+    when(configurationMock.get("sonar.auth." + Constants.OIDC_IDENTITY_PROVIDER_KEY + ".clientId.secured"))
         .thenReturn(Optional.of("id"));
-    when(configurationMock.getBoolean("sonar.auth." + OidcIdentityProvider.KEY + ".autoLogin"))
+    when(configurationMock.getBoolean("sonar.auth." + Constants.OIDC_IDENTITY_PROVIDER_KEY + ".autoLogin"))
         .thenReturn(Optional.of(true));
     when(configurationMock.get(CoreProperties.SERVER_BASE_URL)).thenReturn(Optional.of(SONAR_URL));
 
@@ -59,7 +59,7 @@ public class AutoLoginFilterTest {
     FilterChain chain = mock(FilterChain.class);
     filter.doFilter(request, response, chain);
 
-    verify(response).sendRedirect(SONAR_URL + "/sessions/init/" + OidcIdentityProvider.KEY + "?return_to=/projects");
+    verify(response).sendRedirect(SONAR_URL + "/sessions/init/" + Constants.OIDC_IDENTITY_PROVIDER_KEY + "?return_to=/projects");
 
     filter.destroy();
   }
@@ -67,13 +67,13 @@ public class AutoLoginFilterTest {
   @Test
   public void testFilterDisbled() throws Exception {
     Configuration configurationMock = mock(Configuration.class);
-    when(configurationMock.getBoolean("sonar.auth." + OidcIdentityProvider.KEY + ".enabled"))
+    when(configurationMock.getBoolean("sonar.auth." + Constants.OIDC_IDENTITY_PROVIDER_KEY + ".enabled"))
         .thenReturn(Optional.of(true));
-    when(configurationMock.get("sonar.auth." + OidcIdentityProvider.KEY + ".issuerUri"))
+    when(configurationMock.get("sonar.auth." + Constants.OIDC_IDENTITY_PROVIDER_KEY + ".issuerUri"))
         .thenReturn(Optional.of("http://idp.com"));
-    when(configurationMock.get("sonar.auth." + OidcIdentityProvider.KEY + ".clientId.secured"))
+    when(configurationMock.get("sonar.auth." + Constants.OIDC_IDENTITY_PROVIDER_KEY + ".clientId.secured"))
         .thenReturn(Optional.of("id"));
-    when(configurationMock.getBoolean("sonar.auth." + OidcIdentityProvider.KEY + ".autoLogin"))
+    when(configurationMock.getBoolean("sonar.auth." + Constants.OIDC_IDENTITY_PROVIDER_KEY + ".autoLogin"))
         .thenReturn(Optional.of(false));
     when(configurationMock.get(CoreProperties.SERVER_BASE_URL)).thenReturn(Optional.of(SONAR_URL));
 

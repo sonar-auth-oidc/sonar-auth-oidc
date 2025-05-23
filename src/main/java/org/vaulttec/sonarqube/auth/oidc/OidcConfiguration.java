@@ -17,31 +17,28 @@
  */
 package org.vaulttec.sonarqube.auth.oidc;
 
-import static java.lang.String.format;
-import static java.lang.String.valueOf;
-import static org.sonar.api.CoreProperties.CATEGORY_SECURITY;
-import static org.sonar.api.PropertyType.BOOLEAN;
-import static org.sonar.api.PropertyType.SINGLE_SELECT_LIST;
-import static org.sonar.api.PropertyType.STRING;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import javax.annotation.CheckForNull;
-
 import org.sonar.api.CoreProperties;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.server.ServerSide;
 
+import javax.annotation.CheckForNull;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static java.lang.String.format;
+import static java.lang.String.valueOf;
+import static org.sonar.api.CoreProperties.CATEGORY_SECURITY;
+import static org.sonar.api.PropertyType.*;
+
 @ServerSide
 public class OidcConfiguration {
 
-  private static final String PREFIX = "sonar.auth." + OidcIdentityProvider.KEY;
+  private static final String PREFIX = "sonar.auth." + Constants.OIDC_IDENTITY_PROVIDER_KEY;
 
   private static final String CATEGORY = CATEGORY_SECURITY;
-  private static final String SUBCATEGORY = OidcIdentityProvider.KEY;
+  private static final String SUBCATEGORY = Constants.OIDC_IDENTITY_PROVIDER_KEY;
 
   static final String ENABLED = PREFIX + ".enabled";
   static final String AUTO_LOGIN = PREFIX + ".autoLogin";

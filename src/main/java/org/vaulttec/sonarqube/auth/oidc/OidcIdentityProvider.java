@@ -31,7 +31,6 @@ import org.sonar.api.server.authentication.UserIdentity;
 public class OidcIdentityProvider implements OAuth2IdentityProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OidcIdentityProvider.class);
-  public static final String KEY = "oidc";
 
   private final OidcConfiguration config;
   private final OidcClient client;
@@ -45,7 +44,7 @@ public class OidcIdentityProvider implements OAuth2IdentityProvider {
 
   @Override
   public String getKey() {
-    return KEY;
+    return Constants.OIDC_IDENTITY_PROVIDER_KEY;
   }
 
   @Override

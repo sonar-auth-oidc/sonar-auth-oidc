@@ -21,7 +21,10 @@ import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import org.sonar.api.server.ServerSide;
 import org.sonar.api.server.authentication.UserIdentity;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -80,7 +83,7 @@ public class UserIdentityFactory {
   }
 
   private String generateUniqueLogin(UserInfo userInfo) {
-    return format("%s@%s", userInfo.getSubject().getValue(), OidcIdentityProvider.KEY);
+    return format("%s@%s", userInfo.getSubject().getValue(), Constants.OIDC_IDENTITY_PROVIDER_KEY);
   }
 
   private String getName(UserInfo userInfo) {

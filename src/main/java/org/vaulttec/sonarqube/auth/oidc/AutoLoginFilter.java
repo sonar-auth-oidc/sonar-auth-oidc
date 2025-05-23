@@ -34,7 +34,7 @@ public class AutoLoginFilter extends HttpFilter {
   private static final Logger LOGGER = LoggerFactory.getLogger(AutoLoginFilter.class);
 
   private static final String LOGIN_URL = "/sessions/new";
-  private static final String OIDC_URL = "/sessions/init/" + OidcIdentityProvider.KEY + "?return_to=";
+  private static final String OIDC_URL = "/sessions/init/" + Constants.OIDC_IDENTITY_PROVIDER_KEY + "?return_to=";
   private static final String SKIP_REQUEST_PARAM = "auto-login=false";
 
   private final OidcConfiguration config;
