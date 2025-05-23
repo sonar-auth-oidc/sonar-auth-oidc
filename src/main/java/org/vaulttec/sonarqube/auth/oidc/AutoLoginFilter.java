@@ -17,15 +17,6 @@
  */
 package org.vaulttec.sonarqube.auth.oidc;
 
-import java.io.IOException;
-
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.sonar.api.server.ServerSide;
 import org.sonar.api.server.http.HttpRequest;
 import org.sonar.api.server.http.HttpResponse;
@@ -34,6 +25,8 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.web.FilterChain;
 import org.sonar.api.web.HttpFilter;
 import org.sonar.api.web.UrlPattern;
+
+import java.io.IOException;
 
 @ServerSide
 public class AutoLoginFilter extends HttpFilter {
