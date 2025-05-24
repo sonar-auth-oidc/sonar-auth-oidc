@@ -48,7 +48,7 @@
 
 	<scm>
 		<connection>scm:git:https://github.com/sonar-auth-oidc/sonar-auth-oidc.git</connection>
-		<developerConnection>scm:git:git@github.com:sonar-auth-oidc/sonar-auth-oidc.git</developerConnection>
+		<developerConnection>scm:git:https://github.com/sonar-auth-oidc/sonar-auth-oidc.git</developerConnection>
 		<url>https://github.com/sonar-auth-oidc/sonar-auth-oidc</url>
 		<tag>HEAD</tag>
 	</scm>
