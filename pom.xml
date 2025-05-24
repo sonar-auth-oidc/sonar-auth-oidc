@@ -3,7 +3,7 @@
 
 	<groupId>org.vaulttec.sonarqube.auth.oidc</groupId>
 	<artifactId>sonar-auth-oidc-plugin</artifactId>
-	<version>3.0.0-RC1</version>
+	<version>3.0.0-RC2-SNAPSHOT</version>
 	<packaging>sonar-plugin</packaging>
 	<name>OpenID Connect Authentication for SonarQube</name>
 	<description>OpenID Connect Authentication for SonarQube</description>
@@ -50,7 +50,7 @@
 		<connection>scm:git:https://github.com/sonar-auth-oidc/sonar-auth-oidc.git</connection>
 		<developerConnection>scm:git:https://github.com/sonar-auth-oidc/sonar-auth-oidc.git</developerConnection>
 		<url>https://github.com/sonar-auth-oidc/sonar-auth-oidc</url>
-		<tag>v3.0.0-RC1</tag>
+		<tag>HEAD</tag>
 	</scm>
 
 	<developers>
