@@ -134,18 +134,18 @@
 		<dependency>
 			<groupId>org.sonarsource.api.plugin</groupId>
 			<artifactId>sonar-plugin-api</artifactId>
-			<version>${sonar-plugin-api.version}</version>
+			<version>11.0.0.2664</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>oauth2-oidc-sdk</artifactId>
-			<version>${nimbusds-oidc-sdk.version}</version>
+			<version>11.24</version>
 		</dependency>
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>${nimbusds-jose-jwt.version}</version>
+			<version>10.3</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -187,7 +187,7 @@
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>mockwebserver</artifactId>
-			<version>4.10.0</version>
+			<version>4.12.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
