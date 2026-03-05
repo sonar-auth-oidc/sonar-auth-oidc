@@ -62,18 +62,17 @@ public class OidcClient {
   }
 
   public AuthenticationRequest createAuthenticationRequest(String callbackUrl, String state) {
-    AuthenticationRequest request;
     LOGGER.debug("Creating authentication request");
     OIDCProviderMetadata providerMetadata = getProviderMetadata();
     try {
-      Builder builder = new AuthenticationRequest.Builder(RESPONSE_TYPE, getScope(), getClientId(),
-          new URI(callbackUrl));
-      request = builder.endpointURI(providerMetadata.getAuthorizationEndpointURI()).state(State.parse(state)).build();
+      URI endpointUri = providerMetadata.getAuthorizationEndpointURI();
+      return new AuthenticationRequest.Builder(RESPONSE_TYPE, getScope(), getClientId(), new URI(callbackUrl))
+          .endpointURI(endpointUri)
+          .state(State.parse(state))
+          .build();
     } catch (URISyntaxException e) {
       throw new IllegalStateException("Creating new authentication request failed", e);
     }
-    LOGGER.debug("Authentication request URI: {}", request.toURI());
-    return request;
   }
 
   public AuthorizationCode getAuthorizationCode(HttpRequest callbackRequest) {
@@ -214,11 +213,23 @@ public class OidcClient {
   protected OIDCProviderMetadata getProviderMetadata() {
     LOGGER.debug("Retrieving provider metadata from {}", config.issuerUri());
     try {
-      return OIDCProviderMetadata.resolve(new Issuer(config.issuerUri()));
+      OIDCProviderMetadata metadata = OIDCProviderMetadata.resolve(new Issuer(config.issuerUri()));
+
+      config.authorizationEndpoint().ifPresent(customEndpoint -> {
+        if (!customEndpoint.trim().isEmpty()) {
+          try {
+            LOGGER.info("Overriding OIDC authorization endpoint: {}", customEndpoint);
+            metadata.setAuthorizationEndpointURI(new URI(customEndpoint));
+          } catch (URISyntaxException e) {
+            throw new IllegalStateException("The custom OIDC authorization endpoint URI is invalid: " + customEndpoint, e);
+          }
+        }
+      });
+      return metadata;
     } catch (IOException | GeneralException e) {
       if (e instanceof GeneralException && e.getMessage().contains("issuer doesn't match")) {
         throw new IllegalStateException("Retrieving OpenID Connect provider metadata failed: " +
-                "Issuer URL in provider metadata doesn't match the issuer URI specified in plugin configuration");
+            "Issuer URL in provider metadata doesn't match the issuer URI specified in plugin configuration");
       } else {
         throw new IllegalStateException("Retrieving OpenID Connect provider metadata failed", e);
       }

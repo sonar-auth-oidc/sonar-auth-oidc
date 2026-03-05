@@ -79,6 +79,8 @@ public class OidcConfiguration {
   static final String LOGIN_BUTTON_TEXT = PREFIX + ".loginButtonText";
   private static final String LOGIN_BUTTON_TEXT_DEFAULT_VALUE = "OpenID Connect";
 
+  public static final String AUTH_ENDPOINT = PREFIX + ".authorizationEndpoint";
+
   private final Configuration config;
 
   public OidcConfiguration(Configuration config) {
@@ -106,6 +108,10 @@ public class OidcConfiguration {
   @CheckForNull
   public String issuerUri() {
     return config.get(ISSUER_URI).orElse(null);
+  }
+
+  public Optional<String> authorizationEndpoint() {
+    return config.get(AUTH_ENDPOINT);
   }
 
   @CheckForNull
@@ -174,6 +180,9 @@ public class OidcConfiguration {
         PropertyDefinition.builder(ISSUER_URI).name("Issuer URI")
             .description("The issuer URI of an OpenID Connect provider. "
                 + "This URI is used to retrieve the provider's metadata via OpenID Connect Discovery from the path \"/.well-known/openid-configuration\".")
+            .category(CATEGORY).subCategory(SUBCATEGORY).type(STRING).index(index++).build(),
+        PropertyDefinition.builder(AUTH_ENDPOINT).name("Authorization Endpoint")
+            .description("Override the authorization endpoint URL if the one from .well-known/openid-configuration is not reachable or incorrect.")
             .category(CATEGORY).subCategory(SUBCATEGORY).type(STRING).index(index++).build(),
         PropertyDefinition.builder(CLIENT_ID).name("Client ID").description("The ID of an OpenID Connect Client.")
             .category(CATEGORY).subCategory(SUBCATEGORY).type(STRING).index(index++).build(),

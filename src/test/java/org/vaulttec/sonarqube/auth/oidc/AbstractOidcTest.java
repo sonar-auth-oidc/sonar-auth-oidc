@@ -46,8 +46,8 @@ public abstract class AbstractOidcTest {
 
   @Before
   public void initConfig() {
-      when(config.get(any())).thenAnswer(invocation -> Optional.of(settings.get(invocation.getArgument(0))));
-      when(config.getBoolean(any())).thenAnswer(invocation -> Optional.of(Boolean.parseBoolean(settings.get(invocation.getArgument(0)))));
+    when(config.get(any())).thenAnswer(invocation -> Optional.ofNullable(settings.get(invocation.getArgument(0))));
+    when(config.getBoolean(any())).thenAnswer(invocation -> Optional.ofNullable(Boolean.parseBoolean(settings.get(invocation.getArgument(0)))));
   }
 
   protected void setSettings(boolean enabled) {

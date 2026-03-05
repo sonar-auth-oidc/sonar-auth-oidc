@@ -33,7 +33,7 @@ public class AuthOidcPluginTest {
   public void test_server_side_extensions() throws Exception {
     Plugin.Context context = setupContext(SonarQubeSide.SERVER);
     underTest.define(context);
-    assertThat(context.getExtensions()).hasSize(20);
+    assertThat(context.getExtensions()).hasSize(21);
   }
 
   @Test
