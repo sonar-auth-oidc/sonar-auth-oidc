@@ -17,8 +17,8 @@
  */
 package org.vaulttec.sonarqube.auth.oidc;
 
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,8 +83,9 @@ public class OidcIdentityProvider implements OAuth2IdentityProvider {
   public void callback(CallbackContext context) {
     LOGGER.debug("Handling authentication response");
     context.verifyCsrfState();
-    AuthorizationCode authorizationCode = client.getAuthorizationCode(context.getHttpRequest());
-    UserInfo userInfo = client.getUserInfo(authorizationCode, context.getCallbackUrl());
+    AuthenticationSuccessResponse callbackResponse = client.parseCallback(context.getHttpRequest());
+    UserInfo userInfo = client.getUserInfo(callbackResponse.getAuthorizationCode(), context.getCallbackUrl(),
+        callbackResponse.getState() != null ? callbackResponse.getState().getValue() : null);
     UserIdentity userIdentity = userIdentityFactory.create(userInfo);
     LOGGER.debug("Authenticating user '{}' with groups {}", userIdentity.getProviderLogin(), userIdentity.getGroups());
     context.authenticate(userIdentity);

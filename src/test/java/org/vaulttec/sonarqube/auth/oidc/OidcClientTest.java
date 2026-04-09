@@ -20,6 +20,8 @@ package org.vaulttec.sonarqube.auth.oidc;
 import static junit.framework.TestCase.assertTrue;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -81,7 +83,7 @@ public class OidcClientTest extends AbstractOidcTest {
   }
 
   @Test
-  public void getAuthorizationCode() {
+  public void parseCallback() {
     OidcClient underTest = newSpyOidcClient();
     HttpRequest request = mock(HttpRequest.class);
     when(request.getMethod()).thenReturn("GET");
@@ -89,7 +91,7 @@ public class OidcClientTest extends AbstractOidcTest {
     when(request.getRequestURL()).thenReturn("http://:0");
     when(request.getQueryString()).thenReturn("state=" + STATE + "&code=" + VALID_CODE);
 
-    AuthorizationCode code = underTest.getAuthorizationCode(request);
+    AuthorizationCode code = underTest.parseCallback(request).getAuthorizationCode();
     assertEquals("invalid access code", VALID_CODE, code.getValue());
   }
 
@@ -101,7 +103,7 @@ public class OidcClientTest extends AbstractOidcTest {
     when(request.getRequestURL()).thenReturn("http://invalid . com");
     when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
     try {
-      underTest.getAuthorizationCode(request);
+      underTest.parseCallback(request);
       failBecauseExceptionWasNotThrown(IllegalStateException.class);
     } catch (IllegalStateException e) {
       assertEquals("Error while processing callback request", e.getMessage());
@@ -118,7 +120,7 @@ public class OidcClientTest extends AbstractOidcTest {
     when(request.getQueryString())
         .thenReturn("error=invalid_request&error_description=the request is not valid or malformed");
     try {
-      underTest.getAuthorizationCode(request);
+      underTest.parseCallback(request);
       failBecauseExceptionWasNotThrown(IllegalStateException.class);
     } catch (IllegalStateException e) {
       assertEquals("Authentication request failed: {\"error_description\":"
@@ -129,7 +131,7 @@ public class OidcClientTest extends AbstractOidcTest {
   @Test
   public void getUserInfo() {
     OidcClient underTest = newSpyOidcClient();
-    UserInfo userInfo = underTest.getUserInfo(new AuthorizationCode(VALID_CODE), CALLBACK_URL);
+    UserInfo userInfo = underTest.getUserInfo(new AuthorizationCode(VALID_CODE), CALLBACK_URL, STATE);
     assertEquals("afaba592-ac85-4cf1-8ec6-0058d157f882", userInfo.getSubject().getValue());
     assertEquals("john.doo", userInfo.getPreferredUsername());
     assertEquals("John Doo", userInfo.getName());
@@ -143,7 +145,7 @@ public class OidcClientTest extends AbstractOidcTest {
     OidcClient underTest = newSpyOidcClient();
     AuthorizationCode authorizationCode = new AuthorizationCode(INVALID_CODE);
     try {
-      underTest.getUserInfo(authorizationCode, CALLBACK_URL);
+      underTest.getUserInfo(authorizationCode, CALLBACK_URL, STATE);
       failBecauseExceptionWasNotThrown(IllegalStateException.class);
     } catch (IllegalStateException e) {
       assertEquals("Token request failed: {\"error\":\"invalid_request\"}", e.getMessage());
@@ -154,11 +156,11 @@ public class OidcClientTest extends AbstractOidcTest {
   public void tokenErrorResponseWithoutErrorCode() {
     OidcClient underTest = newSpyOidcClient();
     TokenErrorResponse errorTokenResponse = new TokenErrorResponse(new ErrorObject(null));
-    doReturn(errorTokenResponse).when(underTest).getTokenResponse(getProviderMetadata(ISSUER_URI).getTokenEndpointURI(),
-        new AuthorizationCode("no_error"), CALLBACK_URL);
+    doReturn(errorTokenResponse).when(underTest).getTokenResponse(eq(getProviderMetadata(ISSUER_URI).getTokenEndpointURI()),
+        eq(new AuthorizationCode("no_error")), eq(CALLBACK_URL), isNull());
     AuthorizationCode authorizationCode = new AuthorizationCode("no_error");
     try {
-      underTest.getUserInfo(authorizationCode, CALLBACK_URL);
+      underTest.getUserInfo(authorizationCode, CALLBACK_URL, STATE);
       failBecauseExceptionWasNotThrown(IllegalStateException.class);
     } catch (IllegalStateException e) {
       assertEquals("Token request failed: No error code returned (identity provider not reachable - "
@@ -171,7 +173,7 @@ public class OidcClientTest extends AbstractOidcTest {
     OidcClient underTest = newSpyOidcClient();
     AuthorizationCode authorizationCode = new AuthorizationCode(VALID_CODE);
     try {
-      underTest.getUserInfo(authorizationCode, INVALID_URL);
+      underTest.getUserInfo(authorizationCode, INVALID_URL, STATE);
       failBecauseExceptionWasNotThrown(URISyntaxException.class);
     } catch (IllegalStateException e) {
       assertEquals("Retrieving access token failed", e.getMessage());
@@ -181,7 +183,7 @@ public class OidcClientTest extends AbstractOidcTest {
   @Test
   public void getUserInfoFromUserInfoEndpoint() {
     OidcClient underTest = newSpyOidcClientWithoutProfileInformation();
-    UserInfo userInfo = underTest.getUserInfo(new AuthorizationCode(VALID_CODE), CALLBACK_URL);
+    UserInfo userInfo = underTest.getUserInfo(new AuthorizationCode(VALID_CODE), CALLBACK_URL, STATE);
     assertEquals("e65c9607-fd4e-4bcd-97b1-ca057616590e", userInfo.getSubject().getValue());
     assertEquals("john.doo", userInfo.getPreferredUsername());
     assertEquals("John Doo", userInfo.getName());
@@ -199,7 +201,7 @@ public class OidcClientTest extends AbstractOidcTest {
         .getUserInfoResponse(getProviderMetadata(ISSUER_URI).getUserInfoEndpointURI(), INVALID_BEARER_ACCESS_TOKEN);
     AuthorizationCode authorizationCode = new AuthorizationCode(INVALID_CODE);
     try {
-      underTest.getUserInfo(authorizationCode, CALLBACK_URL);
+      underTest.getUserInfo(authorizationCode, CALLBACK_URL, STATE);
       failBecauseExceptionWasNotThrown(IllegalStateException.class);
     } catch (IllegalStateException e) {
       assertEquals("UserInfo request failed: {\"error\":\"some_error\"}", e.getMessage());
@@ -214,7 +216,7 @@ public class OidcClientTest extends AbstractOidcTest {
         .getUserInfoResponse(getProviderMetadata(ISSUER_URI).getUserInfoEndpointURI(), INVALID_BEARER_ACCESS_TOKEN);
     AuthorizationCode authorizationCode = new AuthorizationCode(INVALID_CODE);
     try {
-      underTest.getUserInfo(authorizationCode, CALLBACK_URL);
+      underTest.getUserInfo(authorizationCode, CALLBACK_URL, STATE);
       failBecauseExceptionWasNotThrown(IllegalStateException.class);
     } catch (IllegalStateException e) {
       assertEquals("UserInfo request failed: No error code returned "
@@ -233,16 +235,16 @@ public class OidcClientTest extends AbstractOidcTest {
               + "\"scope\":\"\","
               + "\"id_token\":\"eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ3djY4UzUybDZTWVUxNGFfd0N3VElJT01WV1d1RXVXUFNBcERjYXo5Rnd3In0.eyJqdGkiOiIwYzdkNDQ0Yy1iM2MxLTQzM2YtODQ1OC1iYzRlYmQ4YjM4MGIiLCJleHAiOjE1MTQzMDcwNTQsIm5iZiI6MCwiaWF0IjoxNTE0MzA2NzU0LCJpc3MiOiJodHRwOi8vbWFjYm9vay1wcm8uZnJpdHouYm94OjgwODAvYXV0aC9yZWFsbXMvc3NvIiwiYXVkIjoic29uYXJxdWJlIiwic3ViIjoiYWZhYmE1OTItYWM4NS00Y2YxLThlYzYtMDA1OGQxNTdmODgyIiwidHlwIjoiSUQiLCJhenAiOiJzb25hcnF1YmUiLCJhdXRoX3RpbWUiOjE1MTQzMDY3NTQsInNlc3Npb25fc3RhdGUiOiJhYTY3Y2M2OS03YTA2LTQ3ZDEtYmEwMC02OTY0NmU2MGI4YmUiLCJhY3IiOiIxIiwibmFtZSI6IkpvaG4gRG9vIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiam9obi5kb28iLCJnaXZlbl9uYW1lIjoiSm9obiIsImZhbWlseV9uYW1lIjoiRG9vIiwiZW1haWwiOiJqb2huLmRvb0BhY21lLmNvbSJ9.UwqM6TGPrpMpK70FKxX9ZQWyUySjx7fxeV5IAT2PtzTH4xZKLJQbQmb4uD9z7o5azK5fgYc9xQfJKQX2y2euz-mtSdjueqkPAY-djQEc2kyvb-4Nd9Qc4Uiy19aAuooNdM-pAiYhfvyQQiGMRe3z68sq45mgfDpKMBcV-5bOJNafQ8tLLEonzT37-1GMfuAMv7ppx4HmdUDQccZ0D4nBqmeFRPcA3BghPZJ6eThR_mRsuYW1yZDg5tMle2cZe80mnIZSTW349cPwJFfmQDNT7XQBHHTCa6pYsBoqs2KYadOnbMSPCXZ-agd0DzffgtujsBvrUWV8tXSZ7axY34xMQQ\","
               + "\"token_type\":\"Bearer\",\"expires_in\":300}")));
-      doReturn(tokenResponse).when(client).getTokenResponse(getProviderMetadata(ISSUER_URI).getTokenEndpointURI(),
-          new AuthorizationCode(VALID_CODE), CALLBACK_URL);
+      doReturn(tokenResponse).when(client).getTokenResponse(eq(getProviderMetadata(ISSUER_URI).getTokenEndpointURI()),
+          eq(new AuthorizationCode(VALID_CODE)), eq(CALLBACK_URL), isNull());
 
       TokenErrorResponse errorTokenResponse = TokenErrorResponse
           .parse(new JSONObject(JSONObjectUtils.parse("{\"error\":\"invalid_request\"}")));
-      doReturn(errorTokenResponse).when(client).getTokenResponse(getProviderMetadata(ISSUER_URI).getTokenEndpointURI(),
-          new AuthorizationCode(INVALID_CODE), CALLBACK_URL);
+      doReturn(errorTokenResponse).when(client).getTokenResponse(eq(getProviderMetadata(ISSUER_URI).getTokenEndpointURI()),
+          eq(new AuthorizationCode(INVALID_CODE)), eq(CALLBACK_URL), isNull());
 
       UserInfo userInfo = new UserInfo(tokenResponse.getOIDCTokens().getIDToken().getJWTClaimsSet());
-      doReturn(userInfo).when(client).getUserInfo(new AuthorizationCode(VALID_CODE), CALLBACK_URL);
+      doReturn(userInfo).when(client).getUserInfo(eq(new AuthorizationCode(VALID_CODE)), eq(CALLBACK_URL), eq(STATE));
     } catch (ParseException | java.text.ParseException e) {
       // ignore
     }
@@ -257,15 +259,15 @@ public class OidcClientTest extends AbstractOidcTest {
           "{\"id_token\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJzdWIiOiJlNjVjOTYwNy1mZDRlLTRiY2QtOTdiMS1jYTA1NzYxNjU5MGUiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvaHViIiwiYXVkIjpbIjYwZGNhY2FmLThhOTQtNDE3Ny1iMmYyLTEzNDg0NjNmODhjZSJdLCJleHAiOjEuNTIzNTcyMTY3NTYxRTksImlhdCI6MS41MTU3OTYxNjc1OTdFOSwiYXV0aF90aW1lIjoxLjUxNTc5NjE2NzU2MUU5fQ.o_h3f6QK--p1Ru8pUquoLpvB1vdBCorUfdq_I8J_yBbjyPS4LUP9-e_xkXtql6yOSh9AewNUb7PSKnJOq-TlMMMlOr-Or676i1wT0hGQb2aKnzzFu7VYQOep8_6t-AQSXRhckaR5NIJnF6oxFWdTwhizcenO_Osf12R-PQOyQsA\","
               + "\"access_token\":\"1515799767598.60dcacaf-8a94-4177-b2f2-1348463f88ce.e65c9607-fd4e-4bcd-97b1-ca057616590e.0-0-0-0-0;1.MCwCFEjmjjDDL1yAQ+jYA+VxgYNNNr4hAhR66eAgXKfs6kOJehOALtRqw5wq9Q==\","
               + "\"token_type\":\"Bearer\"," + "\"expires_in\":3600," + "\"scope\":\"0-0-0-0-0\"}")));
-      doReturn(tokenResponse).when(client).getTokenResponse(getProviderMetadata(ISSUER_URI).getTokenEndpointURI(),
-          new AuthorizationCode(VALID_CODE), CALLBACK_URL);
+      doReturn(tokenResponse).when(client).getTokenResponse(eq(getProviderMetadata(ISSUER_URI).getTokenEndpointURI()),
+          eq(new AuthorizationCode(VALID_CODE)), eq(CALLBACK_URL), isNull());
 
       OIDCTokenResponse invalidTokenResponse = OIDCTokenResponse.parse(new JSONObject(JSONObjectUtils.parse(
           "{\"id_token\":\"eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJzdWIiOiJlNjVjOTYwNy1mZDRlLTRiY2QtOTdiMS1jYTA1NzYxNjU5MGUiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvaHViIiwiYXVkIjpbIjYwZGNhY2FmLThhOTQtNDE3Ny1iMmYyLTEzNDg0NjNmODhjZSJdLCJleHAiOjEuNTIzNTcyMTY3NTYxRTksImlhdCI6MS41MTU3OTYxNjc1OTdFOSwiYXV0aF90aW1lIjoxLjUxNTc5NjE2NzU2MUU5fQ.o_h3f6QK--p1Ru8pUquoLpvB1vdBCorUfdq_I8J_yBbjyPS4LUP9-e_xkXtql6yOSh9AewNUb7PSKnJOq-TlMMMlOr-Or676i1wT0hGQb2aKnzzFu7VYQOep8_6t-AQSXRhckaR5NIJnF6oxFWdTwhizcenO_Osf12R-PQOyQsA\","
               + "\"access_token\":\"invalid\"," + "\"token_type\":\"Bearer\"," + "\"expires_in\":3600,"
               + "\"scope\":\"0-0-0-0-0\"}")));
       doReturn(invalidTokenResponse).when(client).getTokenResponse(
-          getProviderMetadata(ISSUER_URI).getTokenEndpointURI(), new AuthorizationCode(INVALID_CODE), CALLBACK_URL);
+          eq(getProviderMetadata(ISSUER_URI).getTokenEndpointURI()), eq(new AuthorizationCode(INVALID_CODE)), eq(CALLBACK_URL), isNull());
 
       UserInfoSuccessResponse userInfoResponse = new UserInfoSuccessResponse(
           new UserInfo(new JSONObject(JSONObjectUtils.parse("{\"sub\":\"e65c9607-fd4e-4bcd-97b1-ca057616590e\","
@@ -276,7 +278,7 @@ public class OidcClientTest extends AbstractOidcTest {
           getProviderMetadata(ISSUER_URI).getUserInfoEndpointURI(),
           tokenResponse.getOIDCTokens().getBearerAccessToken());
 
-      doCallRealMethod().when(client).getUserInfo(new AuthorizationCode(VALID_CODE), CALLBACK_URL);
+      doCallRealMethod().when(client).getUserInfo(eq(new AuthorizationCode(VALID_CODE)), eq(CALLBACK_URL), eq(STATE));
     } catch (ParseException | java.text.ParseException e) {
       // ignore
     }
