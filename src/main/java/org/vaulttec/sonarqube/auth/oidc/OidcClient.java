@@ -23,7 +23,10 @@ import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.ResponseType.Value;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretJWT;
+import com.nimbusds.oauth2.sdk.auth.ClientSecretPost;
 import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
@@ -165,12 +168,21 @@ public class OidcClient {
   protected TokenResponse getTokenResponse(URI tokenEndpointURI, AuthorizationCode authorizationCode,
       String callbackUrl) {
     try {
-      TokenRequest request = new TokenRequest(tokenEndpointURI, new ClientSecretBasic(getClientId(), getClientSecret()),
-          new AuthorizationCodeGrant(authorizationCode, new URI(callbackUrl)));
+      AuthorizationCodeGrant grant = new AuthorizationCodeGrant(authorizationCode, new URI(callbackUrl));
+      ClientAuthentication clientAuth;
+      String authMethod = config.tokenEndpointAuthMethod();
+      if (OidcConfiguration.TOKEN_ENDPOINT_AUTH_METHOD_CLIENT_SECRET_POST.equals(authMethod)) {
+        clientAuth = new ClientSecretPost(getClientId(), getClientSecret());
+      } else if (OidcConfiguration.TOKEN_ENDPOINT_AUTH_METHOD_CLIENT_SECRET_JWT.equals(authMethod)) {
+        clientAuth = new ClientSecretJWT(getClientId(), tokenEndpointURI, JWSAlgorithm.HS256, getClientSecret());
+      } else {
+        clientAuth = new ClientSecretBasic(getClientId(), getClientSecret());
+      }
+      TokenRequest request = new TokenRequest(tokenEndpointURI, clientAuth, grant);
       HTTPResponse response = request.toHTTPRequest().send();
       LOGGER.debug("Token response content: {}", response.getContent());
       return OIDCTokenResponseParser.parse(response);
-    } catch (URISyntaxException | ParseException e) {
+    } catch (URISyntaxException | ParseException | JOSEException e) {
       throw new IllegalStateException("Retrieving access token failed", e);
     } catch (IOException e) {
       throw new IllegalStateException("Retrieving access token failed: "

@@ -52,6 +52,12 @@ public class OidcConfiguration {
   static final String ID_TOKEN_SIG_ALG_RSA = "RS256";
   static final String ID_TOKEN_SIG_ALG_ECDSA = "ES256";
 
+  static final String TOKEN_ENDPOINT_AUTH_METHOD = PREFIX + ".tokenEndpointAuthMethod";
+  static final String TOKEN_ENDPOINT_AUTH_METHOD_CLIENT_SECRET_BASIC = "client_secret_basic";
+  static final String TOKEN_ENDPOINT_AUTH_METHOD_CLIENT_SECRET_POST = "client_secret_post";
+  static final String TOKEN_ENDPOINT_AUTH_METHOD_CLIENT_SECRET_JWT = "client_secret_jwt";
+  private static final String TOKEN_ENDPOINT_AUTH_METHOD_DEFAULT_VALUE = TOKEN_ENDPOINT_AUTH_METHOD_CLIENT_SECRET_BASIC;
+
   static final String SCOPES = PREFIX + ".scopes";
   private static final String SCOPES_DEFAULT_VALUE = "openid email profile";
 
@@ -115,6 +121,10 @@ public class OidcConfiguration {
 
   public String clientSecret() {
     return config.get(CLIENT_SECRET).orElse(null);
+  }
+
+  public String tokenEndpointAuthMethod() {
+    return config.get(TOKEN_ENDPOINT_AUTH_METHOD).orElse(TOKEN_ENDPOINT_AUTH_METHOD_DEFAULT_VALUE);
   }
 
   public String scopes() {
@@ -181,6 +191,15 @@ public class OidcConfiguration {
             .description("The shared secret of a non-public client. "
                 + "This is only needed for an OpenID Connect client with access type \"confidential\".")
             .category(CATEGORY).subCategory(SUBCATEGORY).type(STRING).index(index++).build(),
+        PropertyDefinition.builder(TOKEN_ENDPOINT_AUTH_METHOD).name("Token endpoint authentication method")
+            .description("The authentication method used when sending requests to the token endpoint: "
+                + "'client_secret_basic' sends credentials in the HTTP Authorization header, "
+                + "'client_secret_post' sends credentials in the POST body.")
+            .category(CATEGORY).subCategory(SUBCATEGORY).type(SINGLE_SELECT_LIST)
+            .defaultValue(TOKEN_ENDPOINT_AUTH_METHOD_DEFAULT_VALUE)
+            .options(TOKEN_ENDPOINT_AUTH_METHOD_CLIENT_SECRET_BASIC, TOKEN_ENDPOINT_AUTH_METHOD_CLIENT_SECRET_POST,
+                TOKEN_ENDPOINT_AUTH_METHOD_CLIENT_SECRET_JWT)
+            .index(index++).build(),
         PropertyDefinition.builder(SCOPES).name("Scopes")
             .description("OAuth scopes ('openid' is required) to pass in the Open ID Connect authorize request.")
             .category(CATEGORY).subCategory(SUBCATEGORY).type(STRING).defaultValue(SCOPES_DEFAULT_VALUE).index(index++)
