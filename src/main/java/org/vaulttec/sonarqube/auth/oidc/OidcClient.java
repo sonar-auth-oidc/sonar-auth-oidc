@@ -29,6 +29,8 @@ import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.oauth2.sdk.id.State;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
+import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.*;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest.Builder;
@@ -48,6 +50,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @ServerSide
 public class OidcClient {
@@ -56,6 +59,7 @@ public class OidcClient {
 
   private static final ResponseType RESPONSE_TYPE = new ResponseType(Value.CODE);
   private final OidcConfiguration config;
+  private final Map<String, CodeVerifier> codeVerifiers = new ConcurrentHashMap<>();
 
   public OidcClient(OidcConfiguration config) {
     this.config = config;
@@ -66,9 +70,12 @@ public class OidcClient {
     LOGGER.debug("Creating authentication request");
     OIDCProviderMetadata providerMetadata = getProviderMetadata();
     try {
+      CodeVerifier codeVerifier = new CodeVerifier();
+      codeVerifiers.put(state, codeVerifier);
       Builder builder = new AuthenticationRequest.Builder(RESPONSE_TYPE, getScope(), getClientId(),
           new URI(callbackUrl));
-      request = builder.endpointURI(providerMetadata.getAuthorizationEndpointURI()).state(State.parse(state)).build();
+      request = builder.endpointURI(providerMetadata.getAuthorizationEndpointURI()).state(State.parse(state))
+          .codeChallenge(codeVerifier, CodeChallengeMethod.S256).build();
     } catch (URISyntaxException e) {
       throw new IllegalStateException("Creating new authentication request failed", e);
     }
@@ -76,7 +83,7 @@ public class OidcClient {
     return request;
   }
 
-  public AuthorizationCode getAuthorizationCode(HttpRequest callbackRequest) {
+  public AuthenticationSuccessResponse parseCallback(HttpRequest callbackRequest) {
     LOGGER.debug("Retrieving authorization code from callback request's query parameters: {}",
         callbackRequest.getQueryString());
     AuthenticationResponse authResponse;
@@ -106,15 +113,15 @@ public class OidcClient {
       throw new IllegalStateException("Authentication request failed: " + error.toJSONObject());
     }
 
-    AuthorizationCode authorizationCode = ((AuthenticationSuccessResponse) authResponse).getAuthorizationCode();
-    LOGGER.debug("Authorization code: {}", authorizationCode.getValue());
-    return authorizationCode;
+    AuthenticationSuccessResponse successResponse = (AuthenticationSuccessResponse) authResponse;
+    LOGGER.debug("Authorization code: {}", successResponse.getAuthorizationCode().getValue());
+    return successResponse;
   }
 
-  public UserInfo getUserInfo(AuthorizationCode authorizationCode, String callbackUrl) {
+  public UserInfo getUserInfo(AuthorizationCode authorizationCode, String callbackUrl, String state) {
     LOGGER.debug("Getting user info for authorization code");
     OIDCProviderMetadata providerMetadata = getProviderMetadata();
-    OIDCTokens oidcTokens = getOidcTokens(authorizationCode, callbackUrl, providerMetadata);
+    OIDCTokens oidcTokens = getOidcTokens(authorizationCode, callbackUrl, state, providerMetadata);
 
     UserInfo userInfo;
     try {
@@ -142,10 +149,11 @@ public class OidcClient {
     return userInfo;
   }
 
-  private OIDCTokens getOidcTokens(AuthorizationCode authorizationCode, String callbackUrl, OIDCProviderMetadata providerMetadata) {
+  private OIDCTokens getOidcTokens(AuthorizationCode authorizationCode, String callbackUrl, String state, OIDCProviderMetadata providerMetadata) {
     LOGGER.debug("Retrieving OIDC tokens with user info claims set from {}", providerMetadata.getTokenEndpointURI());
+    CodeVerifier codeVerifier = state != null ? codeVerifiers.remove(state) : null;
     TokenResponse tokenResponse = getTokenResponse(providerMetadata.getTokenEndpointURI(), authorizationCode,
-        callbackUrl);
+        callbackUrl, codeVerifier);
     if (tokenResponse instanceof TokenErrorResponse) {
       ErrorObject errorObject = ((TokenErrorResponse) tokenResponse).getErrorObject();
       if (errorObject == null || errorObject.getCode() == null) {
@@ -163,10 +171,12 @@ public class OidcClient {
   }
 
   protected TokenResponse getTokenResponse(URI tokenEndpointURI, AuthorizationCode authorizationCode,
-      String callbackUrl) {
+      String callbackUrl, CodeVerifier codeVerifier) {
     try {
-      TokenRequest request = new TokenRequest(tokenEndpointURI, new ClientSecretBasic(getClientId(), getClientSecret()),
-          new AuthorizationCodeGrant(authorizationCode, new URI(callbackUrl)));
+      AuthorizationCodeGrant grant = codeVerifier != null
+          ? new AuthorizationCodeGrant(authorizationCode, new URI(callbackUrl), codeVerifier)
+          : new AuthorizationCodeGrant(authorizationCode, new URI(callbackUrl));
+      TokenRequest request = new TokenRequest(tokenEndpointURI, new ClientSecretBasic(getClientId(), getClientSecret()), grant);
       HTTPResponse response = request.toHTTPRequest().send();
       LOGGER.debug("Token response content: {}", response.getContent());
       return OIDCTokenResponseParser.parse(response);
