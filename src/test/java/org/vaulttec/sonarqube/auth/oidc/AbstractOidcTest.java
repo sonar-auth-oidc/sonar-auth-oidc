@@ -60,6 +60,7 @@ public abstract class AbstractOidcTest {
       settings.put(OidcConfiguration.ISSUER_URI, issuerUri);
       settings.put(OidcConfiguration.CLIENT_ID, "id");
       settings.put(OidcConfiguration.CLIENT_SECRET, "secret");
+      settings.put(OidcConfiguration.TOKEN_ENDPOINT_AUTH_METHOD, OidcConfiguration.TOKEN_ENDPOINT_AUTH_METHOD_CLIENT_SECRET_BASIC);
       settings.put(OidcConfiguration.ID_TOKEN_SIG_ALG, "RS256");
       settings.put(OidcConfiguration.LOGIN_STRATEGY, LOGIN_STRATEGY_DEFAULT_VALUE);
       settings.put(OidcConfiguration.GROUPS_SYNC, "true");

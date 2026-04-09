@@ -178,7 +178,7 @@ public class OidcConfigurationTest {
 
   @Test
   public void definitions() {
-    assertThat(OidcConfiguration.definitions()).hasSize(15);
+    assertThat(OidcConfiguration.definitions()).hasSize(16);
   }
 
   @Test
