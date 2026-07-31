@@ -208,7 +208,11 @@ public class OidcClient {
 
   protected OIDCProviderMetadata getProviderMetadata() {
     String issuerUri = config.issuerUri();
-    IssuerUriValidator.validate(issuerUri);
+    try {
+      IssuerUriValidator.validate(issuerUri);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalStateException("Invalid OpenID Connect issuer URI configuration: " + e.getMessage(), e);
+    }
     LOGGER.debug("Retrieving provider metadata from {}", issuerUri);
     try {
       return OIDCProviderMetadata.resolve(new Issuer(issuerUri));

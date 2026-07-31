@@ -94,6 +94,17 @@ public class OidcConfigurationTest {
   }
 
   @Test
+  public void issuer_uri_getter_does_not_throw_on_trailing_slash() {
+    settings.put(OidcConfiguration.ENABLED, "true");
+    settings.put(OidcConfiguration.ISSUER_URI, "https://idp.example.com/");
+    settings.put(OidcConfiguration.CLIENT_ID, "id");
+
+    // validate at discovery time only; isEnabled must stay a boolean check
+    assertThat(underTest.issuerUri()).isEqualTo("https://idp.example.com/");
+    assertThat(underTest.isEnabled()).isTrue();
+  }
+
+  @Test
   public void return_client_id() {
     settings.put(OidcConfiguration.CLIENT_ID, "id");
     assertThat(underTest.clientId()).isEqualTo("id");

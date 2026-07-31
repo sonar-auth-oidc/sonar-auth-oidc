@@ -105,11 +105,8 @@ public class OidcConfiguration {
 
   @CheckForNull
   public String issuerUri() {
-    String issuerUri = config.get(ISSUER_URI).orElse(null);
-    if (issuerUri != null) {
-      IssuerUriValidator.validate(issuerUri);
-    }
-    return issuerUri;
+    // getter stays non-throwing so isEnabled() can return false on bad config
+    return config.get(ISSUER_URI).orElse(null);
   }
 
   @CheckForNull
