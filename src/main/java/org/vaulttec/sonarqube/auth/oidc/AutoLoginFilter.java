@@ -52,17 +52,35 @@ public class AutoLoginFilter extends HttpFilter {
   public void doFilter(HttpRequest request, HttpResponse response, FilterChain chain) throws IOException {
     if (config.isEnabled() && config.isAutoLogin()) {
       String referrer = request.getHeader("referer");
-      LOGGER.debug("Referrer: {}", referrer);
+      LOGGER.debug("Referrer present: {}", referrer != null);
 
-      // Skip if disabled via request parameter
-      if (referrer == null || !referrer.endsWith(SKIP_REQUEST_PARAM)) {
-        String loginPageUrl = config.getBaseUrl() + OIDC_URL + config.getContextPath() + "/projects";
-        LOGGER.debug("Redirecting to OIDC login page: {}", loginPageUrl);
+      if (!isAutoLoginSkipped(referrer)) {
+        String loginPageUrl = buildAutoLoginRedirectUrl();
+        LOGGER.debug("Redirecting to OIDC login page");
         response.sendRedirect(loginPageUrl);
         return;
       }
     }
     chain.doFilter(request, response);
+  }
+
+  private boolean isAutoLoginSkipped(String referrer) {
+    if (referrer == null) {
+      return false;
+    }
+    return referrer.contains(SKIP_REQUEST_PARAM);
+  }
+
+  private String buildAutoLoginRedirectUrl() {
+    String baseUrl = config.getBaseUrl();
+    if (baseUrl == null || baseUrl.isEmpty()) {
+      throw new IllegalStateException("Server base URL is not configured (set sonar.core.serverBaseURL)");
+    }
+    String contextPath = config.getContextPath();
+    if (contextPath == null) {
+      contextPath = "";
+    }
+    return baseUrl + OIDC_URL + contextPath + "/projects";
   }
 
   @Override
