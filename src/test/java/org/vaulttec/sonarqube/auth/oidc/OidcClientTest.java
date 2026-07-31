@@ -94,6 +94,19 @@ public class OidcClientTest extends AbstractOidcTest {
   }
 
   @Test
+  public void getAuthorizationCodeWithEncodedValues() {
+    OidcClient underTest = newSpyOidcClient();
+    HttpRequest request = mock(HttpRequest.class);
+    when(request.getMethod()).thenReturn("GET");
+    when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
+    when(request.getRequestURL()).thenReturn("http://localhost/callback");
+    when(request.getQueryString()).thenReturn("state=" + STATE + "&code=valid%5Fcode");
+
+    AuthorizationCode code = underTest.getAuthorizationCode(request);
+    assertEquals("invalid access code", "valid_code", code.getValue());
+  }
+
+  @Test
   public void invalidAuthenticationResponseUri() {
     OidcClient underTest = newSpyOidcClient();
     HttpRequest request = mock(HttpRequest.class);

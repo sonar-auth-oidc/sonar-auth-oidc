@@ -25,6 +25,7 @@ import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.ResponseType.Value;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.auth.Secret;
+import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.Issuer;
@@ -42,8 +43,8 @@ import org.sonar.api.server.ServerSide;
 import org.sonar.api.server.http.HttpRequest;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +56,9 @@ public class OidcClient {
   private static final Logger LOGGER = LoggerFactory.getLogger(OidcClient.class);
 
   private static final ResponseType RESPONSE_TYPE = new ResponseType(Value.CODE);
+  private static final int HTTP_CONNECT_TIMEOUT_MS = 10_000;
+  private static final int HTTP_READ_TIMEOUT_MS = 30_000;
+
   private final OidcConfiguration config;
 
   public OidcClient(OidcConfiguration config) {
@@ -77,27 +81,14 @@ public class OidcClient {
   }
 
   public AuthorizationCode getAuthorizationCode(HttpRequest callbackRequest) {
-    LOGGER.debug("Retrieving authorization code from callback request's query parameters: {}",
-        callbackRequest.getQueryString());
+    String queryString = callbackRequest.getQueryString();
+    LOGGER.debug("Retrieving authorization code from callback query parameters: {}",
+        SensitiveLogging.redactQueryString(queryString));
     AuthenticationResponse authResponse;
     try {
       URI uri = new URI(callbackRequest.getRequestURL());
-
-      Map<String, List<String>> queryParams = new HashMap<>();
-      String queryString = callbackRequest.getQueryString();
-      if (queryString != null && !queryString.isEmpty() ) {
-        String[] pairs = queryString.split("&");
-        for (String pair: pairs) {
-          int idx = pair.indexOf("=");
-          if (idx > 0) {
-            String key = URLDecoder.decode(pair.substring(0,idx), "UTF-8");
-            String value = URLDecoder.decode(pair.substring(idx + 1), "UTF-8");
-            queryParams.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
-          }
-        }
-      }
-     authResponse = AuthenticationResponseParser.parse(uri, queryParams);
-    } catch (ParseException | URISyntaxException | UnsupportedEncodingException e) {
+      authResponse = AuthenticationResponseParser.parse(uri, parseQueryParameters(callbackRequest.getQueryString()));
+    } catch (ParseException | URISyntaxException e) {
       throw new IllegalStateException("Error while processing callback request", e);
     }
 
@@ -107,7 +98,7 @@ public class OidcClient {
     }
 
     AuthorizationCode authorizationCode = ((AuthenticationSuccessResponse) authResponse).getAuthorizationCode();
-    LOGGER.debug("Authorization code: {}", authorizationCode.getValue());
+    LOGGER.debug("Authorization code received: {}", SensitiveLogging.redactAuthorizationCode(authorizationCode.getValue()));
     return authorizationCode;
   }
 
@@ -138,7 +129,7 @@ public class OidcClient {
       userInfo = ((UserInfoSuccessResponse) userInfoResponse).getUserInfo();
     }
 
-    LOGGER.debug("User info: {}", userInfo.toJSONObject());
+    LOGGER.debug("User info subject: {}", userInfo.getSubject());
     return userInfo;
   }
 
@@ -167,8 +158,10 @@ public class OidcClient {
     try {
       TokenRequest request = new TokenRequest(tokenEndpointURI, new ClientSecretBasic(getClientId(), getClientSecret()),
           new AuthorizationCodeGrant(authorizationCode, new URI(callbackUrl)));
-      HTTPResponse response = request.toHTTPRequest().send();
-      LOGGER.debug("Token response content: {}", response.getContent());
+      HTTPRequest httpRequest = request.toHTTPRequest();
+      applyHttpTimeouts(httpRequest);
+      HTTPResponse response = httpRequest.send();
+      LOGGER.debug("Token response status: {}", response.getStatusCode());
       return OIDCTokenResponseParser.parse(response);
     } catch (URISyntaxException | ParseException e) {
       throw new IllegalStateException("Retrieving access token failed", e);
@@ -179,7 +172,7 @@ public class OidcClient {
   }
 
   private void validateIdToken(Issuer issuer, URI jwkSetURI, JWT idToken) {
-    LOGGER.debug("Validating ID token with {} and key set from from {}", getIdTokenSignAlgorithm(), jwkSetURI);
+    LOGGER.debug("Validating ID token with {} and key set from {}", getIdTokenSignAlgorithm(), jwkSetURI);
     try {
       IDTokenValidator validator = createValidator(issuer, jwkSetURI.toURL());
       validator.validate(idToken, null);
@@ -200,8 +193,10 @@ public class OidcClient {
     LOGGER.debug("Retrieving user info from {}", userInfoEndpointURI);
     try {
       UserInfoRequest request = new UserInfoRequest(userInfoEndpointURI, accessToken);
-      HTTPResponse response = request.toHTTPRequest().send();
-      LOGGER.debug("UserInfo response content: {}", response.getContent());
+      HTTPRequest httpRequest = request.toHTTPRequest();
+      applyHttpTimeouts(httpRequest);
+      HTTPResponse response = httpRequest.send();
+      LOGGER.debug("UserInfo response status: {}", response.getStatusCode());
       return UserInfoResponse.parse(response);
     } catch (ParseException e) {
       throw new IllegalStateException("Retrieving user information failed", e);
@@ -212,17 +207,44 @@ public class OidcClient {
   }
 
   protected OIDCProviderMetadata getProviderMetadata() {
-    LOGGER.debug("Retrieving provider metadata from {}", config.issuerUri());
+    String issuerUri = config.issuerUri();
     try {
-      return OIDCProviderMetadata.resolve(new Issuer(config.issuerUri()));
+      IssuerUriValidator.validate(issuerUri);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalStateException("Invalid OpenID Connect issuer URI configuration: " + e.getMessage(), e);
+    }
+    LOGGER.debug("Retrieving provider metadata from {}", issuerUri);
+    try {
+      return OIDCProviderMetadata.resolve(new Issuer(issuerUri));
     } catch (IOException | GeneralException e) {
-      if (e instanceof GeneralException && e.getMessage().contains("issuer doesn't match")) {
-        throw new IllegalStateException("Retrieving OpenID Connect provider metadata failed: " +
-                "Issuer URL in provider metadata doesn't match the issuer URI specified in plugin configuration");
+      if (e instanceof GeneralException && e.getMessage() != null && e.getMessage().contains("issuer doesn't match")) {
+        throw new IllegalStateException("Retrieving OpenID Connect provider metadata failed: "
+            + "Issuer URL in provider metadata doesn't match the issuer URI specified in plugin configuration");
       } else {
         throw new IllegalStateException("Retrieving OpenID Connect provider metadata failed", e);
       }
     }
+  }
+
+  private static Map<String, List<String>> parseQueryParameters(String queryString) {
+    Map<String, List<String>> queryParams = new HashMap<>();
+    if (queryString == null || queryString.isEmpty()) {
+      return queryParams;
+    }
+    for (String pair : queryString.split("&")) {
+      int idx = pair.indexOf('=');
+      if (idx > 0) {
+        String key = URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8);
+        String value = URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8);
+        queryParams.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
+      }
+    }
+    return queryParams;
+  }
+
+  private static void applyHttpTimeouts(HTTPRequest httpRequest) {
+    httpRequest.setConnectTimeout(HTTP_CONNECT_TIMEOUT_MS);
+    httpRequest.setReadTimeout(HTTP_READ_TIMEOUT_MS);
   }
 
   private Scope getScope() {

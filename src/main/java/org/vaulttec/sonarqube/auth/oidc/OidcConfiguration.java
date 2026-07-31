@@ -105,6 +105,7 @@ public class OidcConfiguration {
 
   @CheckForNull
   public String issuerUri() {
+    // getter stays non-throwing so isEnabled() can return false on bad config
     return config.get(ISSUER_URI).orElse(null);
   }
 
