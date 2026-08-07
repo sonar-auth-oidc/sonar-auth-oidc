@@ -19,7 +19,7 @@ package org.vaulttec.sonarqube.auth.oidc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.vaulttec.sonarqube.auth.oidc.OidcConfiguration.LOGIN_STRATEGY_DEFAULT_VALUE;
+import static org.vaulttec.sonarqube.auth.oidc.OidcConfiguration.*;
 
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
@@ -65,6 +65,8 @@ public abstract class AbstractOidcTest {
       settings.put(OidcConfiguration.GROUPS_SYNC, "true");
       settings.put(OidcConfiguration.GROUPS_SYNC_CLAIM_NAME, "myGroups");
       settings.put(OidcConfiguration.SCOPES, "openid email profile");
+      settings.put(OidcConfiguration.CLAIM_NAME, CLAIM_NAME_DEFAULT);
+      settings.put(OidcConfiguration.CLAIM_EMAIL, CLAIM_EMAIL_DEFAULT);
     } else {
       settings.put(OidcConfiguration.ENABLED, "false");
     }

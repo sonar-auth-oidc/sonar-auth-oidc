@@ -64,6 +64,19 @@ public class UserIdentityFactoryTest {
   }
 
   @Test
+  public void create_with_configured_name_and_email_claims() {
+    UserInfo userInfo = newUserInfo(false, false);
+    settings.put(OidcConfiguration.LOGIN_STRATEGY, OidcConfiguration.LOGIN_STRATEGY_EMAIL);
+    settings.put(OidcConfiguration.CLAIM_NAME, "given_name");
+    settings.put(OidcConfiguration.CLAIM_EMAIL, "name");
+
+    UserIdentity identity = underTest.create(userInfo);
+    assertThat(identity.getName()).isEqualTo("John");
+    assertThat(identity.getEmail()).isEqualTo("John Doo");
+    assertThat(identity.getProviderLogin()).isEqualTo("John Doo");
+  }
+
+  @Test
   public void create_for_unique_login_strategy() {
     UserInfo userInfo = newUserInfo(false, false);
     settings.put(OidcConfiguration.LOGIN_STRATEGY, OidcConfiguration.LOGIN_STRATEGY_UNIQUE);

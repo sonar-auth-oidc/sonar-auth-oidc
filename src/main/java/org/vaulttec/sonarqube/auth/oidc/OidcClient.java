@@ -122,7 +122,9 @@ public class OidcClient {
     } catch (java.text.ParseException e) {
       throw new IllegalStateException("Parsing ID token failed", e);
     }
-    if (((userInfo.getName() == null) && (userInfo.getPreferredUsername() == null))
+    LOGGER.debug("ID token claims: {}", userInfo.toJSONObject());
+    if (userInfo.getStringClaim(config.loginClaim()) == null
+        || (userInfo.getStringClaim(config.claimName()) == null && userInfo.getPreferredUsername() == null)
         || (config.syncGroups() && userInfo.getClaim(config.syncGroupsClaimName()) == null)) {
       UserInfoResponse userInfoResponse = getUserInfoResponse(providerMetadata.getUserInfoEndpointURI(),
           oidcTokens.getBearerAccessToken());
@@ -136,9 +138,9 @@ public class OidcClient {
         }
       }
       userInfo = ((UserInfoSuccessResponse) userInfoResponse).getUserInfo();
+      LOGGER.debug("User info: {}", userInfo.toJSONObject());
     }
 
-    LOGGER.debug("User info: {}", userInfo.toJSONObject());
     return userInfo;
   }
 

@@ -55,6 +55,12 @@ public class OidcConfiguration {
   static final String SCOPES = PREFIX + ".scopes";
   private static final String SCOPES_DEFAULT_VALUE = "openid email profile";
 
+  static final String CLAIM_EMAIL = PREFIX + ".claim.email";
+  static final String CLAIM_NAME = PREFIX + ".claim.name";
+
+  static final String CLAIM_EMAIL_DEFAULT = "email";
+  static final String CLAIM_NAME_DEFAULT = "name";
+
   static final String LOGIN_STRATEGY = PREFIX + ".loginStrategy";
   static final String LOGIN_STRATEGY_UNIQUE = "Unique";
   static final String LOGIN_STRATEGY_PROVIDER_ID = "Same as OpenID Connect login";
@@ -129,12 +135,36 @@ public class OidcConfiguration {
     return config.getBoolean(ALLOW_USERS_TO_SIGN_UP).orElse(false);
   }
 
+  public String claimEmail() {
+    return config.get(CLAIM_EMAIL).orElse(CLAIM_EMAIL_DEFAULT);
+  }
+
+  public String claimName() {
+    return config.get(CLAIM_NAME).orElse(CLAIM_NAME_DEFAULT);
+  }
+
   public String loginStrategy() {
     return config.get(LOGIN_STRATEGY).orElse(null);
   }
 
   public String loginStrategyCustomClaimName() {
     return config.get(LOGIN_STRATEGY_CUSTOM_CLAIM_NAME).orElse(null);
+  }
+
+  public String loginClaim() {
+    switch (loginStrategy()) {
+      case LOGIN_STRATEGY_PREFERRED_USERNAME:
+        return "preferred_username";
+      case LOGIN_STRATEGY_PROVIDER_ID:
+      case LOGIN_STRATEGY_UNIQUE:
+        return "sub";
+      case LOGIN_STRATEGY_EMAIL:
+        return claimEmail();
+      case LOGIN_STRATEGY_CUSTOM_CLAIM:
+        return loginStrategyCustomClaimName();
+      default:
+        throw new IllegalStateException(format("Login strategy not supported: %s", loginStrategy()));
+    }
   }
 
   public boolean syncGroups() {
@@ -211,6 +241,14 @@ public class OidcConfiguration {
             .description("Name of the claim in case login generation strategy is set to custom claim.")
             .category(CATEGORY).subCategory(SUBCATEGORY).type(STRING)
             .defaultValue(LOGIN_STRATEGY_CUSTOM_CLAIM_NAME_DEFAULT_VALUE).index(index++).build(),
+        PropertyDefinition.builder(CLAIM_NAME).name("Display Name custom claim")
+            .description("Name of the claim in the Open ID Connect userinfo holding the user's name.")
+            .category(CATEGORY).subCategory(SUBCATEGORY).type(STRING)
+            .defaultValue(CLAIM_NAME_DEFAULT).index(index++).build(),
+        PropertyDefinition.builder(CLAIM_EMAIL).name("Email custom claim")
+            .description("Name of the claim in the Open ID Connect userinfo holding the user's email.")
+            .category(CATEGORY).subCategory(SUBCATEGORY).type(STRING)
+            .defaultValue(CLAIM_EMAIL_DEFAULT).index(index++).build(),
         PropertyDefinition.builder(GROUPS_SYNC).name("Synchronize groups")
             .description("For each of his Open ID Connect userinfo groups claim entries,"
                 + " the user will be associated to a group with the same name (if it exists) in SonarQube.")

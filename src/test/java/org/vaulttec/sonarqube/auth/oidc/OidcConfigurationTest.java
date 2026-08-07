@@ -153,6 +153,20 @@ public class OidcConfigurationTest {
   }
 
   @Test
+  public void claim_name() {
+    assertThat(underTest.claimName()).isEqualTo("name");
+    settings.put(OidcConfiguration.CLAIM_NAME, "testname");
+    assertThat(underTest.claimName()).isEqualTo("testname");
+  }
+
+  @Test
+  public void claim_email() {
+    assertThat(underTest.claimEmail()).isEqualTo("email");
+    settings.put(OidcConfiguration.CLAIM_EMAIL, "testmail");
+    assertThat(underTest.claimEmail()).isEqualTo("testmail");
+  }
+
+  @Test
   public void scopes() {
     settings.put(OidcConfiguration.SCOPES, "openid");
     assertThat(underTest.scopes()).isEqualTo("openid");
@@ -178,7 +192,7 @@ public class OidcConfigurationTest {
 
   @Test
   public void definitions() {
-    assertThat(OidcConfiguration.definitions()).hasSize(15);
+    assertThat(OidcConfiguration.definitions()).hasSize(17);
   }
 
   @Test
