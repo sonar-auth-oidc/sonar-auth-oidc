@@ -45,61 +45,53 @@ public class UserIdentityFactory {
 
   public UserIdentity create(UserInfo userInfo) {
     UserIdentity.Builder builder = UserIdentity.builder().setProviderId(userInfo.getSubject().getValue())
-        .setProviderLogin(getLogin(userInfo)).setName(getName(userInfo)).setEmail(userInfo.getEmailAddress());
+        .setProviderLogin(getLogin(userInfo)).setName(getName(userInfo))
+        .setEmail(userInfo.getStringClaim(config.claimEmail()));
     if (config.syncGroups()) {
       builder.setGroups(getGroups(userInfo));
     }
     return builder.build();
   }
 
-  private String getLogin(UserInfo userInfo) {
-    switch (config.loginStrategy()) {
-    case LOGIN_STRATEGY_PREFERRED_USERNAME:
-      if (userInfo.getPreferredUsername() == null) {
-        throw new IllegalStateException("Claim 'preferred_username' is missing in user info - "
-            + "make sure your OIDC provider supports this claim in the id token or at the user info endpoint");
-      }
-      return userInfo.getPreferredUsername();
-    case LOGIN_STRATEGY_PROVIDER_ID:
-      return userInfo.getSubject().getValue();
-    case LOGIN_STRATEGY_EMAIL:
-      if (userInfo.getEmailAddress() == null) {
-        throw new IllegalStateException("Claim 'email' is missing in user info - "
-            + "make sure your OIDC provider supports this claim in the id token or at the user info endpoint");
-      }
-      return userInfo.getEmailAddress();
-    case LOGIN_STRATEGY_UNIQUE:
-      return generateUniqueLogin(userInfo);
-    case LOGIN_STRATEGY_CUSTOM_CLAIM:
-      if (userInfo.getStringClaim(config.loginStrategyCustomClaimName()) == null) {
-        throw new IllegalStateException(
-            "Custom claim '" + config.loginStrategyCustomClaimName() + "' is missing in user info - "
-                + "make sure your OIDC provider supports this claim in the id token or at the user info endpoint");
-      }
-      return userInfo.getStringClaim(config.loginStrategyCustomClaimName());
-    default:
-      throw new IllegalStateException(format("Login strategy not supported: %s", config.loginStrategy()));
-    }
+  private String claimMissingMessage(String label, String claim) {
+    return format("%s '%s' is missing in user info - "
+            + "make sure your OIDC provider supports this claim in the id token or at the user info endpoint", label, claim);
   }
 
-  private String generateUniqueLogin(UserInfo userInfo) {
-    return format("%s@%s", userInfo.getSubject().getValue(), Constants.OIDC_IDENTITY_PROVIDER_KEY);
+  private String getLogin(UserInfo userInfo) {
+    String login = getClaim(userInfo, config.loginClaim());
+    if (config.loginStrategy().equals(LOGIN_STRATEGY_UNIQUE)) {
+      return format("%s@%s", login, Constants.OIDC_IDENTITY_PROVIDER_KEY);
+    }
+    return login;
   }
 
   private String getName(UserInfo userInfo) {
-    String name = userInfo.getName() != null ? userInfo.getName() : userInfo.getPreferredUsername();
+    String name = userInfo.getStringClaim(config.claimName());
     if (name == null) {
-      throw new IllegalStateException("Claims 'name' and 'preferred_username' are missing in user info - "
-          + "make sure your OIDC provider supports at least one of these claims in the id token or at the user info endpoint");
+      name = userInfo.getPreferredUsername();
+    }
+    if (name == null) {
+      throw new IllegalStateException(format("Claims '%s' and 'preferred_username' are missing in user info - "
+          + "make sure your OIDC provider supports at least one of these claims in the id token or at the user info endpoint",
+          config.claimName()));
     }
     return name;
+  }
+
+  private String getClaim(UserInfo userInfo, String claim) {
+    String value = userInfo.getStringClaim(claim);
+    if (value == null) {
+      boolean custom = LOGIN_STRATEGY_CUSTOM_CLAIM.equals(config.loginStrategy());
+      throw new IllegalStateException(claimMissingMessage(custom ? "Custom claim" : "Claim", claim));
+    }
+    return value;
   }
 
   private Set<String> getGroups(UserInfo userInfo) {
     Object groupsClaim = userInfo.getClaim(config.syncGroupsClaimName());
     if (groupsClaim == null) {
-      throw new IllegalStateException("Groups claim '" + config.syncGroupsClaimName() + "' is missing in user info - "
-          + "make sure your OIDC provider supports this claim in the id token or at the user info endpoint");
+      throw new IllegalStateException(claimMissingMessage("Groups claim", config.syncGroupsClaimName()));
     }
     List<String> groups;
     if (groupsClaim instanceof List) {
