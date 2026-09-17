@@ -27,6 +27,8 @@ import org.sonar.api.web.HttpFilter;
 
 import java.util.Optional;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -59,9 +61,80 @@ public class AutoLoginFilterTest {
     FilterChain chain = mock(FilterChain.class);
     filter.doFilter(request, response, chain);
 
-    verify(response).sendRedirect(SONAR_URL + "/sessions/init/" + Constants.OIDC_IDENTITY_PROVIDER_KEY + "?return_to=/projects");
+    verify(response).sendRedirect(SONAR_URL + "/sessions/init/" + Constants.OIDC_IDENTITY_PROVIDER_KEY + "?return_to=%2Fprojects");
 
     filter.destroy();
+  }
+
+  @Test
+  public void testFilterKeepsReturnTo() throws Exception {
+    HttpFilter filter = new AutoLoginFilter(new OidcConfiguration(autoLoginConfig(null)));
+
+    HttpRequest request = mock(HttpRequest.class);
+    when(request.getRequestURI()).thenReturn(SONAR_URL + "/sessions/new");
+    when(request.getParameter("return_to")).thenReturn("/issues?resolved=false&types=BUG#top");
+
+    HttpResponse response = mock(HttpResponse.class);
+    filter.doFilter(request, response, mock(FilterChain.class));
+
+    // query and fragment of the requested page must survive as one encoded return_to value
+    verify(response).sendRedirect(SONAR_URL + "/sessions/init/" + Constants.OIDC_IDENTITY_PROVIDER_KEY
+        + "?return_to=%2Fissues%3Fresolved%3Dfalse%26types%3DBUG%23top");
+  }
+
+  @Test
+  public void testFilterDefaultReturnToWithContextPath() throws Exception {
+    HttpFilter filter = new AutoLoginFilter(new OidcConfiguration(autoLoginConfig("/sonar")));
+
+    HttpRequest request = mock(HttpRequest.class);
+    when(request.getRequestURI()).thenReturn(SONAR_URL + "/sessions/new");
+
+    HttpResponse response = mock(HttpResponse.class);
+    filter.doFilter(request, response, mock(FilterChain.class));
+
+    verify(response).sendRedirect(SONAR_URL + "/sessions/init/" + Constants.OIDC_IDENTITY_PROVIDER_KEY
+        + "?return_to=%2Fsonar%2Fprojects");
+  }
+
+  @Test
+  public void testFilterIgnoresExternalReturnTo() throws Exception {
+    HttpFilter filter = new AutoLoginFilter(new OidcConfiguration(autoLoginConfig(null)));
+
+    for (String bad : new String[] { "https://evil.com/", "//evil.com/", "/\\evil.com", "evil.com", "", " /issues" }) {
+      HttpRequest request = mock(HttpRequest.class);
+      when(request.getRequestURI()).thenReturn(SONAR_URL + "/sessions/new");
+      when(request.getParameter("return_to")).thenReturn(bad);
+
+      HttpResponse response = mock(HttpResponse.class);
+      filter.doFilter(request, response, mock(FilterChain.class));
+
+      verify(response).sendRedirect(SONAR_URL + "/sessions/init/" + Constants.OIDC_IDENTITY_PROVIDER_KEY
+          + "?return_to=%2Fprojects");
+    }
+  }
+
+  @Test
+  public void testIsRelativePath() {
+    assertTrue(AutoLoginFilter.isRelativePath("/"));
+    assertTrue(AutoLoginFilter.isRelativePath("/sonar/issues?id=1#x"));
+    assertFalse(AutoLoginFilter.isRelativePath(null));
+    assertFalse(AutoLoginFilter.isRelativePath(""));
+    assertFalse(AutoLoginFilter.isRelativePath("issues"));
+    assertFalse(AutoLoginFilter.isRelativePath("//evil.com"));
+    assertFalse(AutoLoginFilter.isRelativePath("/\\evil.com"));
+    assertFalse(AutoLoginFilter.isRelativePath("http://evil.com/"));
+    assertFalse(AutoLoginFilter.isRelativePath("/issues\r\nSet-Cookie: x"));
+  }
+
+  private static Configuration autoLoginConfig(String contextPath) {
+    Configuration configurationMock = mock(Configuration.class);
+    when(configurationMock.getBoolean(OidcConfiguration.ENABLED)).thenReturn(Optional.of(true));
+    when(configurationMock.get(OidcConfiguration.ISSUER_URI)).thenReturn(Optional.of("http://idp.com"));
+    when(configurationMock.get(OidcConfiguration.CLIENT_ID)).thenReturn(Optional.of("id"));
+    when(configurationMock.getBoolean(OidcConfiguration.AUTO_LOGIN)).thenReturn(Optional.of(true));
+    when(configurationMock.get(CoreProperties.SERVER_BASE_URL)).thenReturn(Optional.of(SONAR_URL));
+    when(configurationMock.get("sonar.web.context")).thenReturn(Optional.ofNullable(contextPath));
+    return configurationMock;
   }
 
   @Test

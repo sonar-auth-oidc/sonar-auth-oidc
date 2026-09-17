@@ -27,6 +27,8 @@ import org.sonar.api.web.HttpFilter;
 import org.sonar.api.web.UrlPattern;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @ServerSide
 public class AutoLoginFilter extends HttpFilter {
@@ -36,6 +38,8 @@ public class AutoLoginFilter extends HttpFilter {
   private static final String LOGIN_URL = "/sessions/new";
   private static final String OIDC_URL = "/sessions/init/" + Constants.OIDC_IDENTITY_PROVIDER_KEY + "?return_to=";
   private static final String SKIP_REQUEST_PARAM = "auto-login=false";
+  private static final String RETURN_TO_PARAM = "return_to";
+  private static final String DEFAULT_RETURN_TO = "/projects";
 
   private final OidcConfiguration config;
 
@@ -56,13 +60,40 @@ public class AutoLoginFilter extends HttpFilter {
 
       // Skip if disabled via request parameter
       if (referrer == null || !referrer.endsWith(SKIP_REQUEST_PARAM)) {
-        String loginPageUrl = config.getBaseUrl() + OIDC_URL + config.getContextPath() + "/projects";
+        String loginPageUrl = config.getBaseUrl() + OIDC_URL
+            + URLEncoder.encode(getReturnTo(request), StandardCharsets.UTF_8);
         LOGGER.debug("Redirecting to OIDC login page: {}", loginPageUrl);
         response.sendRedirect(loginPageUrl);
         return;
       }
     }
     chain.doFilter(request, response);
+  }
+
+  // SonarQube sends unauthenticated users to /sessions/new?return_to=<page they asked for>,
+  // keep that page instead of always landing on /projects after the OIDC round trip
+  private String getReturnTo(HttpRequest request) {
+    String returnTo = request.getParameter(RETURN_TO_PARAM);
+    if (isRelativePath(returnTo)) {
+      return returnTo;
+    }
+    return config.getContextPath() + DEFAULT_RETURN_TO;
+  }
+
+  // only a path on this server is accepted, anything else would be an open redirect
+  static boolean isRelativePath(String path) {
+    if (path == null || path.isEmpty()) {
+      return false;
+    }
+    if (!path.startsWith("/") || path.startsWith("//") || path.startsWith("/\\")) {
+      return false;
+    }
+    for (char c : path.toCharArray()) {
+      if (Character.isWhitespace(c) || Character.isISOControl(c)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
