@@ -10,15 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v6
         with:
           java-version: "17"
-          distribution: "adopt"
+          distribution: "temurin"
 
       - name: Build release and report to SonarQube Cloud
         run: mvn -B clean org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report sonar:sonar -Dsonar.organization=sonar-auth-oidc -Dsonar.projectKey=sonar-auth-oidc_sonar-auth-oidc -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=$SONAR_TOKEN
