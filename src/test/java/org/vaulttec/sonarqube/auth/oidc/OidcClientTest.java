@@ -84,8 +84,7 @@ public class OidcClientTest extends AbstractOidcTest {
   public void getAuthorizationCode() {
     OidcClient underTest = newSpyOidcClient();
     HttpRequest request = mock(HttpRequest.class);
-    when(request.getMethod()).thenReturn("GET");
-    when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
+    setupHttpServletRequestGetHeaderNamesAndGetMethodStubs(request);
     when(request.getRequestURL()).thenReturn("http://:0");
     when(request.getQueryString()).thenReturn("state=" + STATE + "&code=" + VALID_CODE);
 
@@ -97,9 +96,8 @@ public class OidcClientTest extends AbstractOidcTest {
   public void invalidAuthenticationResponseUri() {
     OidcClient underTest = newSpyOidcClient();
     HttpRequest request = mock(HttpRequest.class);
-    when(request.getMethod()).thenReturn("GET");
+    setupHttpServletRequestGetHeaderNamesAndGetMethodStubs(request);
     when(request.getRequestURL()).thenReturn("http://invalid . com");
-    when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
     try {
       underTest.getAuthorizationCode(request);
       failBecauseExceptionWasNotThrown(IllegalStateException.class);
@@ -112,8 +110,7 @@ public class OidcClientTest extends AbstractOidcTest {
   public void authenticationErrorResponse() {
     OidcClient underTest = newSpyOidcClient();
     HttpRequest request = mock(HttpRequest.class);
-    when(request.getMethod()).thenReturn("GET");
-    when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
+    setupHttpServletRequestGetHeaderNamesAndGetMethodStubs(request);
     when(request.getRequestURL()).thenReturn("http://:0");
     when(request.getQueryString())
         .thenReturn("error=invalid_request&error_description=the request is not valid or malformed");
@@ -281,5 +278,10 @@ public class OidcClientTest extends AbstractOidcTest {
       // ignore
     }
     return client;
+  }
+
+  private void setupHttpServletRequestGetHeaderNamesAndGetMethodStubs(HttpServletRequest request) {
+      when(request.getMethod()).thenReturn("GET");
+      when(request.getHeaderNames()).thenReturn(Collections.emptyEnumeration());
   }
 }
